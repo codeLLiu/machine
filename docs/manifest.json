@@ -1,0 +1,240 @@
+[
+  {
+    "name": "status_icon",
+    "file": "status_icon.png",
+    "size": [
+      62,
+      57
+    ],
+    "source_crop": [
+      286,
+      96,
+      348,
+      153
+    ]
+  },
+  {
+    "name": "basic_info_icon",
+    "file": "basic_info_icon.png",
+    "size": [
+      59,
+      61
+    ],
+    "source_crop": [
+      1162,
+      96,
+      1221,
+      157
+    ]
+  },
+  {
+    "name": "plc_icon",
+    "file": "plc_icon.png",
+    "size": [
+      60,
+      60
+    ],
+    "source_crop": [
+      719,
+      97,
+      779,
+      157
+    ]
+  },
+  {
+    "name": "basic_info_cube",
+    "file": "basic_info_cube.png",
+    "size": [
+      129,
+      93
+    ],
+    "source_crop": [
+      1511,
+      104,
+      1640,
+      197
+    ]
+  },
+  {
+    "name": "status_trend_chart",
+    "file": "status_trend_chart.png",
+    "size": [
+      140,
+      84
+    ],
+    "source_crop": [
+      532,
+      109,
+      672,
+      193
+    ]
+  },
+  {
+    "name": "plc_signal_chart",
+    "file": "plc_signal_chart.png",
+    "size": [
+      110,
+      76
+    ],
+    "source_crop": [
+      1007,
+      117,
+      1117,
+      193
+    ]
+  },
+  {
+    "name": "device_control_title_marker",
+    "file": "device_control_title_marker.png",
+    "size": [
+      15,
+      31
+    ],
+    "source_crop": [
+      280,
+      235,
+      295,
+      266
+    ]
+  },
+  {
+    "name": "power_module",
+    "file": "power_module.png",
+    "size": [
+      170,
+      134
+    ],
+    "source_crop": [
+      742,
+      263,
+      912,
+      397
+    ]
+  },
+  {
+    "name": "fan_illustration",
+    "file": "fan_illustration.png",
+    "size": [
+      149,
+      113
+    ],
+    "source_crop": [
+      1462,
+      284,
+      1611,
+      397
+    ]
+  },
+  {
+    "name": "fan_icon",
+    "file": "fan_icon.png",
+    "size": [
+      41,
+      48
+    ],
+    "source_crop": [
+      967,
+      290,
+      1008,
+      338
+    ]
+  },
+  {
+    "name": "power_icon",
+    "file": "power_icon.png",
+    "size": [
+      37,
+      37
+    ],
+    "source_crop": [
+      292,
+      297,
+      329,
+      334
+    ]
+  },
+  {
+    "name": "battery_illustration",
+    "file": "battery_illustration.png",
+    "size": [
+      136,
+      121
+    ],
+    "source_crop": [
+      779,
+      417,
+      915,
+      538
+    ]
+  },
+  {
+    "name": "step_control_illustration",
+    "file": "step_control_illustration.png",
+    "size": [
+      153,
+      117
+    ],
+    "source_crop": [
+      1491,
+      418,
+      1644,
+      535
+    ]
+  },
+  {
+    "name": "battery_icon",
+    "file": "battery_icon.png",
+    "size": [
+      38,
+      43
+    ],
+    "source_crop": [
+      291,
+      429,
+      329,
+      472
+    ]
+  },
+  {
+    "name": "step_control_icon",
+    "file": "step_control_icon.png",
+    "size": [
+      36,
+      43
+    ],
+    "source_crop": [
+      967,
+      430,
+      1003,
+      473
+    ]
+  },
+  {
+    "name": "drone_pad_A",
+    "file": "drone_pad_A.png",
+    "size": [
+      167,
+      131
+    ],
+    "source_crop": [
+      759,
+      596,
+      926,
+      727
+    ]
+  },
+  {
+    "name": "sidebar_bottom_wave",
+    "file": "sidebar_bottom_wave.png",
+    "size": [
+      247,
+      157
+    ],
+    "source_crop": [
+      5,
+      779,
+      252,
+      936
+    ]
+  }
+]
