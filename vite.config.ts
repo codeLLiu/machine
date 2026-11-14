@@ -15,6 +15,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [vue()],
+    define: {
+      // 暴露给前端使用的设备服务地址，避免在组件里重复写死
+      __API_TARGET__: JSON.stringify(target),
+    },
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
