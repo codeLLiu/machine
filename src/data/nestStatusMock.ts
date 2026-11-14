@@ -37,9 +37,9 @@ export const nestStatusMock = {
 
   /** 顶部三张概览卡 */
   summary: {
-    nest: { title: '机巢状态', state: '正常运行', uptime: '12h 36min' },
-    plc: { title: 'PLC', online: true, onlineText: '在线', lastComm: '1分钟前' },
-    info: { title: '基本信息', code: 'MC-2025-001', version: 'v1.0.0' },
+    nest: { title: '机巢状态', state: '正常运行（写死数据）', uptime: '12h 36min（写死数据）' },
+    plc: { title: 'PLC', online: true, onlineText: '在线（写死数据）', lastComm: '1分钟前（写死数据）' },
+    info: { title: '基本信息', code: 'MC-2025-001（写死数据）', version: 'v1.0.0（写死数据）' },
   },
 
   /** 概览卡下方的设备状态条 */
@@ -55,7 +55,7 @@ export const nestStatusMock = {
     power: {
       title: '电源',
       on: true,
-      onText: '已开启',
+      onText: '已开启（写死数据）',
       offText: '已关闭',
       primaryLabel: '关闭电源',
       secondaryLabel: '开启电源',

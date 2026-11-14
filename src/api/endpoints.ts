@@ -50,7 +50,13 @@ export async function fetchRunStatus(): Promise<RunStatus> {
 
 export async function fetchPlcErrors(): Promise<AxisError[]> {
   const payload = await call<unknown>('/api/getPlcErr', { method: 'GET' })
-  return unwrap<AxisError[]>(payload) ?? []
+  const data = unwrap<AxisError[] | Record<string, unknown>>(payload)
+  if (Array.isArray(data)) return data
+  if (data && typeof data === 'object') {
+    const listKey = Object.keys(data).find((key) => Array.isArray(data[key]))
+    if (listKey) return data[listKey] as AxisError[]
+  }
+  return []
 }
 
 export async function sendCommand(payload: CmdPayload): Promise<void> {

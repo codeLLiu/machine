@@ -228,7 +228,7 @@ function runFlowCommand(flowId: string, cmd: string): void {
         <article class="summary-card">
           <div class="summary-card__head">
             <img class="sum-icon" :src="statusIcon" alt="" />
-            <h2>{{ mock.summary.nest.title }}</h2>
+            <h2>{{ mock.summary.nest.title }}（写死数据）</h2>
             <span class="state-tag">{{ mock.summary.nest.state }}</span>
           </div>
           <p class="summary-card__line"><span class="dash">-</span> 运行时间：{{ mock.summary.nest.uptime }}</p>
@@ -238,7 +238,7 @@ function runFlowCommand(flowId: string, cmd: string): void {
         <article class="summary-card">
           <div class="summary-card__head">
             <img class="sum-icon" :src="plcIcon" alt="" />
-            <h2>{{ mock.summary.plc.title }}</h2>
+            <h2>{{ mock.summary.plc.title }}（写死数据）</h2>
             <span class="online-inline"><i />{{ mock.summary.plc.onlineText }}</span>
           </div>
           <p class="summary-card__line"><span class="dash">-</span> 最后通信：{{ mock.summary.plc.lastComm }}</p>
@@ -248,7 +248,7 @@ function runFlowCommand(flowId: string, cmd: string): void {
         <article class="summary-card">
           <div class="summary-card__head">
             <img class="sum-icon" :src="basicInfoIcon" alt="" />
-            <h2>{{ mock.summary.info.title }}</h2>
+            <h2>{{ mock.summary.info.title }}（写死数据）</h2>
           </div>
           <div class="summary-card__line summary-card__line--stack">
             <div><span class="dash">-</span> 机巢编号：{{ mock.summary.info.code }}</div>
@@ -328,6 +328,7 @@ function runFlowCommand(flowId: string, cmd: string): void {
               <div class="device-card__head">
                 <img class="dev-icon dev-icon--fan" :src="fanIcon" alt="" />
                 <h3>{{ mock.deviceControls.fan.title }}</h3>
+                <span class="state-tag state-tag--sm">写死数据</span>
               </div>
               <div class="device-card__actions">
                 <button class="ctrl-btn" :class="{ 'ctrl-btn--primary': fanOn }" type="button" @click="setFan(true)">
@@ -347,6 +348,7 @@ function runFlowCommand(flowId: string, cmd: string): void {
               <div class="device-card__head">
                 <img class="dev-icon dev-icon--battery" :src="batteryIcon" alt="" />
                 <h3>{{ mock.deviceControls.battery.title }}</h3>
+                <span class="state-tag state-tag--sm">写死数据</span>
               </div>
               <div class="slot-row">
                 <button
@@ -370,6 +372,7 @@ function runFlowCommand(flowId: string, cmd: string): void {
               <div class="device-card__head">
                 <img class="dev-icon dev-icon--step" :src="stepControlIcon" alt="" />
                 <h3>{{ mock.deviceControls.steps.title }}</h3>
+                <span class="state-tag state-tag--sm">写死数据</span>
               </div>
               <div class="step-row">
                 <button
@@ -396,6 +399,7 @@ function runFlowCommand(flowId: string, cmd: string): void {
             <img class="flow-card__drone" :src="dronePadA" alt="" />
 
             <span class="flow-badge" :class="{ 'flow-badge--purple': flow.id === 'B' }">{{ flow.badge }}</span>
+            <span class="flow-badge">写死数据</span>
             <p class="flow-current">当前流程 <b>({{ flow.currentCount }})</b>： <span>{{ flow.currentName }}</span></p>
             <p class="flow-line">
               当前流程控制：

@@ -12,7 +12,7 @@ const device = computed(() => ({
   onlineText: nestStore.mode === 'live' ? '设备在线' : '设备离线',
   address: '117.140.203.9:8970',
   channel: '设备 API',
-  notifications: nestStore.plcErrors.filter((axis) =>
+    notifications: (Array.isArray(nestStore.plcErrors) ? nestStore.plcErrors : []).filter((axis) =>
     [axis.axisPowerErr, axis.axisStatusErr, axis.servoErrorErr, axis.servoAxisErr].some((code) => code && code !== '0'),
   ).length,
   avatar: '机',

@@ -71,7 +71,7 @@ async function resetServo(): Promise<void> {
         <AppIcon name="clock" :size="15" /> {{ dateText }}
         <AppIcon name="chevronDown" :size="13" />
       </span>
-      <span class="fh-pill"><AppIcon name="cpu" :size="15" /> 机巢 A · HEFEI-01</span>
+        <span class="fh-pill"><AppIcon name="cpu" :size="15" /> 机巢 A · HEFEI-01（写死数据）</span>
       <button class="fh-pill" type="button" title="复位伺服错误" @click="confirmOpen = true">
         <AppIcon name="reset" :size="15" /> 伺服复位
       </button>

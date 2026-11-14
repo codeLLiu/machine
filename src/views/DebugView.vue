@@ -351,14 +351,15 @@ onMounted(() => {
       <header class="panel__head">
         <div>
           <h2 class="panel__title">轴坐标</h2>
-          <p class="panel__sub">GET /api/getAxisPosition · 文档未定义响应字段，保留原始结果</p>
+          <p class="panel__sub">GET /api/getAxisPosition · 接口开发当中</p>
         </div>
         <button class="btn btn--sm btn--ghost" type="button" :disabled="loadingStatus" @click="loadStatus">
           <AppIcon :name="loadingStatus ? 'refresh' : 'target'" :size="13" :class="{ spin: loadingStatus }" />
           读取坐标
         </button>
       </header>
-      <pre class="response mono">{{ axisPosition || '尚未读取' }}</pre>
+      <pre v-if="axisPosition" class="response mono">{{ axisPosition }}</pre>
+      <p v-else class="response developing">接口开发当中，暂无可读取数据</p>
     </section>
 
     <section class="panel log">
@@ -537,6 +538,11 @@ onMounted(() => {
   color: var(--text-2);
   font-size: var(--fs-xs);
   white-space: pre-wrap;
+}
+
+.response.developing {
+  color: var(--text-3);
+  background: var(--surface-2);
 }
 
 .log__list {
