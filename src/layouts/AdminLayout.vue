@@ -20,13 +20,8 @@ watch(
   () => appStore.closeMobileNav(),
 )
 
-watch(standalone, (value) => {
-  if (value) nestStore.stopPolling()
-  else nestStore.startPolling(5000)
-})
-
 onMounted(() => {
-  if (!standalone.value) nestStore.startPolling(5000)
+  nestStore.startPolling(5000)
 })
 
 onBeforeUnmount(() => {

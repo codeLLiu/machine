@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
@@ -724,14 +724,28 @@ function runFlowCommand(flowId: string, cmd: string): void {
 
 /* ================= 主区：布局等比 + 字号下限 ================= */
 /*
- * --s  ：布局缩放基准 = (视口宽 - 侧栏宽) / 1432（设计稿主区宽），
- *        卡片、插图、间距随窗口等比缩放，相对位置恒定。
- * --fs ：字号缩放基准 = max(--s, 1px)，即字体永远不小于设计稿原始字号，
- *        窗口越大字体越大，窗口变小时字体保持清晰可读。
- * 卡片使用 min-height 而非固定高度，字号偏大时自动撑高，不会溢出。
+ * 响应式策略：三档，任何一档都不靠缩小字体来换一屏。
+ *
+ *  档一 宽高双基准（默认，>=1021px 且视口高 >=760px）
+ *    --s = min((视口宽 - 侧栏宽) / 1432, 视口高 / 901)
+ *    1432 / 901 是设计稿主区尺寸（1672 - 240 侧栏、941 - 40 顶栏留白）。
+ *    窗口"够宽但不够高"时按高度缩，"够高但不够宽"时按宽度缩，取更紧的一边，
+ *    于是任意窗口下卡片、插图、间距的相对比例一致，整页看起来就是同一张图。
+ *
+ *  档二 仅宽度基准（>=1021px 但视口高 <760px，如 1366x700、1280x720）
+ *    --s = (视口宽 - 侧栏宽) / 1432
+ *    矮窗口若继续按高度缩放会把字压到不可读，这里主动放弃"塞进一屏"，
+ *    保持设计稿字号，改为纵向滚动。视觉比例仍与设计稿一致，只是内容变长。
+ *
+ *  档三 固定尺寸 + 重新布局（<=1020px）
+ *    --s = 1px，回到绝对像素，卡片改单列/双列，侧栏转抽屉。
+ *    窄屏下"等比放大缩小"没有意义，重新排布比缩放更有用。
+ *
+ * --fs 始终等于 max(--s, 1px)：窗口小于设计稿时字号也不低于原始值。
+ * 卡片用 min-height 而非固定 height，字号偏大时自动撑高，不会溢出。
  */
 .nest-main {
-  --s: calc((100vw - 240px) / 1432);
+  --s: min(calc((100vw - 240px) / 1432), calc(100vh / 901));
   --fs: max(var(--s), 1px);
   position: relative;
   z-index: 1;
@@ -742,8 +756,19 @@ function runFlowCommand(flowId: string, cmd: string): void {
 }
 
 .nest-page.is-mini .nest-main {
-  --s: calc((100vw - 76px) / 1432);
+  --s: min(calc((100vw - 76px) / 1432), calc(100vh / 901));
   margin-left: 76px;
+}
+
+/* 档二：矮窗口退回仅宽度基准，保住字号，接受纵向滚动 */
+@media (min-width: 1021px) and (max-height: 759px) {
+  .nest-main {
+    --s: calc((100vw - 240px) / 1432);
+  }
+
+  .nest-page.is-mini .nest-main {
+    --s: calc((100vw - 76px) / 1432);
+  }
 }
 
 /* 顶栏由公共组件 NestTopbar 提供（含样式） */

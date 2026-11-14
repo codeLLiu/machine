@@ -1,8 +1,9 @@
-import { createRouter, createWebHistory } from 'vue-router'
+﻿import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import FeaturePending from '@/components/FeaturePending.vue'
+import NestStatusView from '@/views/NestStatusView.vue'
 
 export interface MenuItem {
   name: string
@@ -32,10 +33,10 @@ export const appMenu: MenuGroup[] = [
     ],
   },
   {
-    label: '调试',
+    label: '测试',
     items: [
       { name: 'debug-func', title: '功能调试', icon: 'navFuncDebug' },
-      { name: 'debug-module', title: '模块调试', icon: 'navModuleDebug' },
+      { name: 'debug-module', title: '模拟调试', icon: 'navModuleDebug' },
       { name: 'module-params', title: '模块参数', icon: 'navParams' },
     ],
   },
@@ -73,8 +74,8 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'overview',
         name: 'overview',
-        component: () => import('@/views/OverviewView.vue'),
-        meta: { title: '机巢状态' },
+        component: NestStatusView,
+        meta: { title: '机巢状态', standalone: true },
       },
       {
         path: 'config/serial',

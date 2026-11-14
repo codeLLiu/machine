@@ -22,7 +22,7 @@ interface SidebarGroup {
 const appStore = useAppStore()
 const route = useRoute()
 const navGroups: SidebarGroup[] = [
-  { label: '机巢状态', icon: 'homeSolid', route: 'overview' },
+  { label: '机巢', icon: 'homeSolid', route: 'overview' },
   ...appMenu.slice(1, 3).map((group) => ({
     label: group.label,
     icon: group.label === '配置' ? 'configSolid' : 'gearSolid',

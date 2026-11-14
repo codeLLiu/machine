@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 机巢状态页演示数据（假数据）
  * 后续接入真实接口时，只需把这里的字段替换为接口返回值即可，页面无需改动。
  */
@@ -99,7 +99,7 @@ export const nestStatusMock = {
       currentName: '--',
       controls: ['暂停任务', '中止任务', '恢复任务'],
       commandRows: [
-        ['请求起飞', '请求关闭（起飞）', '请求规整', '请求准备关闭（降落）'],
+        ['请求起飞', '请求关闭（起飞）', '请求降落', '请求准备关闭（降落）'],
         ['请求关闭（降落）', '请求重新起飞'],
       ],
     },
@@ -120,7 +120,7 @@ export const nestStatusMock = {
       ],
     },
     {
-      label: '调试',
+      label: '测试',
       icon: 'gearSolid',
       items: [
         { label: '功能调试', icon: 'wrench', route: 'debug-func' },
