@@ -10,7 +10,7 @@ const appStore = useAppStore()
 const nestStore = useNestStore()
 const device = computed(() => ({
   onlineText: nestStore.mode === 'live' ? '设备在线' : '设备离线',
-  address: '192.168.10.188:7000',
+  address: '117.140.203.9:8970',
   channel: '设备 API',
   notifications: nestStore.plcErrors.filter((axis) =>
     [axis.axisPowerErr, axis.axisStatusErr, axis.servoErrorErr, axis.servoAxisErr].some((code) => code && code !== '0'),

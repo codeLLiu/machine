@@ -6,7 +6,7 @@ import { defineConfig, loadEnv } from 'vite'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   /** API 文档中的设备服务地址，可通过 .env.local 的 VITE_API_TARGET 覆盖 */
-  const target = env.VITE_API_TARGET || 'http://192.168.10.188:7000'
+  const target = env.VITE_API_TARGET || 'http://117.140.203.9:8970'
 
   return {
     plugins: [vue()],
