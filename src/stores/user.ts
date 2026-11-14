@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import { requestLogin } from '@/api/auth'
 
 export interface UserProfile {
   account: string
@@ -10,14 +11,11 @@ export interface UserProfile {
 export interface LoginPayload {
   account: string
   password: string
+  captcha: string
 }
 
 const TOKEN_KEY = 'machine:token'
 const PROFILE_KEY = 'machine:profile'
-
-/** 演示账号，接入真实接口时替换 login 内部实现即可 */
-const DEMO_ACCOUNT = 'admin'
-const DEMO_PASSWORD = '123456'
 
 function readProfile(): UserProfile | null {
   try {
@@ -36,17 +34,26 @@ export const useUserStore = defineStore('user', () => {
   const isLoggedIn = computed(() => token.value.length > 0)
   const displayName = computed(() => profile.value?.name ?? '未登录')
 
+  /**
+   * 登录设备后台：POST /api/login（form-urlencoded）。
+   * 验证码与 sid 会话由 /api/captcha 下发的 Cookie 绑定，
+   * 本地 token 仅用于前端路由守卫标记登录态。
+   */
   async function login(payload: LoginPayload): Promise<void> {
     loading.value = true
     try {
-      // 模拟网络延迟，真实项目替换为接口请求
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      if (payload.account.trim() !== DEMO_ACCOUNT || payload.password !== DEMO_PASSWORD) {
-        throw new Error('账号或密码错误，请使用演示账号 admin / 123456')
+      const result = await requestLogin({
+        username: payload.account.trim(),
+        password: payload.password,
+        // 设备端验证码不区分大小写场景下统一转为大写提交
+        captcha: payload.captcha.trim().toUpperCase(),
+      })
+      if (!result.success) {
+        throw new Error(result.msg || '账号、密码或验证码错误')
       }
-      token.value = `demo-token-${Date.now()}`
+      token.value = `session-${Date.now()}`
       profile.value = {
-        account: DEMO_ACCOUNT,
+        account: payload.account.trim(),
         name: '系统管理员',
         role: '超级管理员',
       }

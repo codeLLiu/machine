@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
+import { fetchCaptcha } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
@@ -13,6 +14,25 @@ const password = ref('123456')
 const showPassword = ref(false)
 const errorMsg = ref('')
 
+const captchaCode = ref('')
+const captchaInput = ref('')
+const captchaLoading = ref(false)
+
+async function refreshCaptcha(): Promise<void> {
+  captchaLoading.value = true
+  captchaInput.value = ''
+  try {
+    captchaCode.value = await fetchCaptcha()
+  } catch (error) {
+    captchaCode.value = ''
+    errorMsg.value = error instanceof Error ? error.message : '验证码获取失败，请稍后重试'
+  } finally {
+    captchaLoading.value = false
+  }
+}
+
+onMounted(refreshCaptcha)
+
 async function handleSubmit(): Promise<void> {
   errorMsg.value = ''
 
@@ -20,13 +40,23 @@ async function handleSubmit(): Promise<void> {
     errorMsg.value = '请输入账号和密码'
     return
   }
+  if (!captchaInput.value.trim()) {
+    errorMsg.value = '请输入验证码'
+    return
+  }
 
   try {
-    await userStore.login({ account: account.value, password: password.value })
+    await userStore.login({
+      account: account.value,
+      password: password.value,
+      captcha: captchaInput.value,
+    })
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/overview'
     await router.replace(redirect)
   } catch (error) {
     errorMsg.value = error instanceof Error ? error.message : '登录失败，请稍后重试'
+    // 登录失败后验证码即失效，刷新验证码与 sid 会话
+    await refreshCaptcha()
   }
 }
 
@@ -136,6 +166,38 @@ function fillDemo(): void {
                 @click="showPassword = !showPassword"
               >
                 {{ showPassword ? '隐藏' : '显示' }}
+              </button>
+            </div>
+          </label>
+
+          <label class="field">
+            <span class="field__label">验证码</span>
+            <div class="captcha-row">
+              <div class="control captcha-row__control">
+                <AppIcon name="shield" :size="15" class="control__icon" />
+                <input
+                  v-model="captchaInput"
+                  class="input control__input"
+                  type="text"
+                  maxlength="8"
+                  autocomplete="off"
+                  placeholder="请输入验证码"
+                />
+              </div>
+              <button
+                type="button"
+                class="captcha-chip"
+                :class="{ 'captcha-chip--loading': captchaLoading }"
+                title="点击刷新验证码"
+                aria-label="点击刷新验证码"
+                :disabled="captchaLoading"
+                @click="refreshCaptcha"
+              >
+                <span v-if="captchaCode" class="captcha-chip__code">{{ captchaCode }}</span>
+                <span v-else class="captcha-chip__fallback">
+                  <AppIcon name="refresh" :size="13" class="spin" />
+                  刷新
+                </span>
               </button>
             </div>
           </label>
@@ -416,6 +478,61 @@ function fillDemo(): void {
 .control__toggle:hover {
   background: var(--surface-2);
   color: var(--text-2);
+}
+
+.captcha-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.captcha-row__control {
+  flex: 1;
+  min-width: 0;
+}
+
+.captcha-chip {
+  flex: 0 0 auto;
+  min-width: 96px;
+  padding: 0 12px;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 6px, color-mix(in srgb, var(--primary) 6%, transparent) 6px 12px),
+    var(--surface-2);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s ease, filter 0.15s ease;
+}
+
+.captcha-chip:hover {
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.captcha-chip:disabled {
+  cursor: wait;
+  filter: grayscale(0.4);
+}
+
+.captcha-chip__code {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  font-style: italic;
+  color: var(--text);
+  text-shadow: 1px 1px 0 color-mix(in srgb, var(--primary) 30%, transparent);
+  transform: skewX(-6deg);
+  pointer-events: none;
+}
+
+.captcha-chip__fallback {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-xs);
+  color: var(--text-4);
 }
 
 .error {
