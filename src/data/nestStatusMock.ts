@@ -120,7 +120,7 @@ export const nestStatusMock = {
       ],
     },
     {
-      label: '测试',
+      label: '调试',
       icon: 'gearSolid',
       items: [
         { label: '功能调试', icon: 'wrench', route: 'debug-func' },

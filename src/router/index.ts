@@ -34,7 +34,7 @@ export const appMenu: MenuGroup[] = [
     ],
   },
   {
-    label: '测试',
+    label: '调试',
     items: [
       { name: 'debug-func', title: '功能调试', icon: 'navFuncDebug' },
       { name: 'debug-module', title: '模拟调试', icon: 'navModuleDebug' },
