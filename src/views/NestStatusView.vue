@@ -1213,7 +1213,7 @@ function runFlowCommand(flowId: string, cmd: string): void {
   padding: calc(var(--s) * 20) calc(var(--s) * 22) calc(var(--s) * 22);
   border: 1px solid var(--line);
   border-radius: calc(var(--s) * 14);
-  background: linear-gradient(120deg, rgba(252, 254, 255, 0.96), rgba(236, 244, 255, 0.85));
+  background: var(--surface);
   box-shadow: 0 6px 16px rgba(100, 145, 215, 0.06);
 }
 

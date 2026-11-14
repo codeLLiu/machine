@@ -8,9 +8,8 @@
    - 呼吸感：8pt 栅格，最小字号 12px，行高 1.6
    ============================================================ */
 
-/* ---------- 浅色（日间默认） ---------- */
-:root,
-[data-theme='light'] {
+/* ---------- 浅色（固定主题） ---------- */
+:root {
   color-scheme: light;
 
   --bg: #f2f3f5;
@@ -56,53 +55,6 @@
   --sheen: linear-gradient(180deg, #ffffff, #fbfcfd);
 }
 
-/* ---------- 深色（夜间值守） ---------- */
-[data-theme='dark'] {
-  color-scheme: dark;
-
-  --bg: #15171b;
-  --bg-2: #191c21;
-  --surface: #1b1e23;
-  --surface-2: #21252b;
-  --surface-3: #272c33;
-  --surface-hover: #2c323a;
-  --sunken: #14171b;
-  --scrim: rgba(6, 8, 11, 0.62);
-  --hover-row: #23272e;
-
-  --border: #2b3038;
-  --border-strong: #3a404a;
-  --border-glow: #4a5361;
-
-  --text: #dfe3e9;
-  --text-2: #b0b8c3;
-  --text-3: #949dab;
-  --text-4: #7b8492;
-
-  --primary: #7d9be8;
-  --primary-hi: #93aef0;
-  --primary-dark: #5f7fd0;
-  --primary-weak: #232b3d;
-  --primary-contrast: #10131a;
-  --accent: #6fb8b3;
-  --accent-weak: #1e2b2c;
-
-  --success: #6bbf94;
-  --success-weak: #1d2b24;
-  --warning: #d6a061;
-  --warning-weak: #2c2519;
-  --danger: #dd808b;
-  --danger-weak: #2f2124;
-  --info: #8aa5e6;
-
-  --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.03);
-  --shadow-md: 0 18px 40px -26px rgba(0, 0, 0, 0.7);
-  --shadow-pop: 0 24px 56px -30px rgba(0, 0, 0, 0.8);
-
-  --grid-line: transparent;
-  --sheen: linear-gradient(180deg, #1e2228, #1a1d22);
-}
-
 :root {
   /* 尺寸 */
   --radius: 12px;
@@ -124,7 +76,7 @@
   --mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Mono', Consolas, 'Liberation Mono',
     ui-monospace, monospace;
 
-  /* 视频画面：两种主题下都保持深色（模拟真实监控画面） */
+  /* 视频画面：固定深色，模拟真实监控画面 */
   --feed-bg: #0f1218;
   --feed-ink: rgba(214, 224, 240, 0.75);
 }
@@ -820,10 +772,6 @@ svg {
   box-shadow: inset 0 1px 2px rgba(20, 26, 38, 0.04);
 }
 
-[data-theme='dark'] .sunken {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
-}
-
 .tile {
   display: flex;
   flex-direction: column;
@@ -1215,10 +1163,6 @@ svg {
   pointer-events: none;
 }
 
-[data-theme='dark'] .seg__thumb {
-  background: var(--surface-3);
-}
-
 /* 分区标题 */
 .block-head {
   display: flex;
@@ -1350,56 +1294,6 @@ svg {
   --ring: 0 0 0 3px rgba(31, 107, 255, 0.14);
 }
 
-[data-theme='dark'] {
-  color-scheme: dark;
-
-  --bg: #0c1830;
-  --bg-2: #142642;
-  --bg-3: #0f1e39;
-  --surface: #172945;
-  --surface-2: #1d3455;
-  --surface-3: #213a5e;
-  --surface-hover: #254a80;
-  --sunken: #142a49;
-  --scrim: rgba(4, 12, 28, 0.62);
-  --hover-row: #1d3455;
-
-  --border: #2b436c;
-  --border-strong: #355182;
-  --border-glow: #4a6a9c;
-
-  --text: #eaf2ff;
-  --text-2: #a7bbdd;
-  --text-3: #8ea6cc;
-  --text-4: #7c94bb;
-
-  --primary: #5d95ff;
-  --primary-hi: #82aaff;
-  --primary-dark: #4479e0;
-  --primary-weak: #1e3866;
-  --primary-contrast: #0c1830;
-  --accent: #42d3e3;
-  --accent-weak: #164554;
-
-  --success: #3bd39c;
-  --success-weak: #154b3f;
-  --warning: #f5b74e;
-  --warning-weak: #4b3a17;
-  --danger: #ff7180;
-  --danger-weak: #4c2130;
-  --info: #5d95ff;
-
-  --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.18);
-  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.22);
-  --shadow-pop: 0 24px 70px rgba(0, 0, 0, 0.5);
-
-  --grid-line: transparent;
-  --sheen: linear-gradient(180deg, #1a3050, #172945);
-  --edge: rgba(255, 255, 255, 0.08);
-  --glass: rgba(23, 41, 69, 0.72);
-  --brand-grad: linear-gradient(135deg, #5d95ff, #4479e0);
-}
-
 body {
   background:
     radial-gradient(760px 560px at 6% 88%, rgba(126, 179, 255, 0.3), transparent 70%),
@@ -1408,14 +1302,6 @@ body {
   background-attachment: fixed;
   font-size: 14px;
   line-height: 1.5;
-}
-
-[data-theme='dark'] body {
-  background:
-    radial-gradient(760px 560px at 6% 88%, rgba(56, 104, 180, 0.24), transparent 70%),
-    radial-gradient(720px 520px at 92% 6%, rgba(46, 84, 150, 0.3), transparent 72%),
-    linear-gradient(158deg, var(--bg) 0%, var(--bg-2) 48%, var(--bg-3) 100%);
-  background-attachment: fixed;
 }
 
 .tech-bg {
@@ -2082,10 +1968,6 @@ body {
   background: radial-gradient(circle at 30% 25%, #ecfbff, #dff0ff);
   color: var(--primary);
   box-shadow: 0 5px 14px rgba(31, 107, 255, 0.1);
-}
-
-[data-theme='dark'] .fh-flow__ic {
-  background: radial-gradient(circle at 30% 25%, #244a70, #1c3557);
 }
 
 .fh-flow__t {

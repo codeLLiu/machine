@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
-import { useThemeStore } from '@/stores/theme'
-
-const themeStore = useThemeStore()
 
 const principles = [
   {
@@ -23,34 +19,28 @@ const principles = [
   },
   {
     icon: 'sun',
-    title: '双主题，跟着环境走',
-    text: '白天浅蓝、夜里深蓝。默认跟随系统，也可以在顶栏一键固定。',
+    title: '明亮主题固定呈现',
+    text: '系统固定使用浅蓝日间配色，避免值守场景下的配色切换差异。',
   },
 ]
 
-const palette = computed(() => {
-  const dark = themeStore.isDark
-  return [
-    { name: '背景', token: '--bg', value: dark ? '#0C1830' : '#EEF6FF' },
-    { name: '卡片', token: '--surface', value: dark ? '#172945' : '#FFFFFF' },
-    { name: '次级面', token: '--surface-2', value: dark ? '#1D3455' : '#F3F8FF' },
-    { name: '描边', token: '--border', value: dark ? '#2B436C' : '#E2ECFC' },
-    { name: '主文字', token: '--text', value: dark ? '#EAF2FF' : '#142341' },
-    { name: '次文字', token: '--text-2', value: dark ? '#A7BBDD' : '#5E7196' },
-    { name: '辅助文字', token: '--text-3', value: dark ? '#8EA6CC' : '#8195B6' },
-    { name: '主色', token: '--primary', value: dark ? '#5D95FF' : '#1F6BFF' },
-  ]
-})
+const palette = [
+  { name: '背景', token: '--bg', value: '#EEF6FF' },
+  { name: '卡片', token: '--surface', value: '#FFFFFF' },
+  { name: '次级面', token: '--surface-2', value: '#F3F8FF' },
+  { name: '描边', token: '--border', value: '#E2ECFC' },
+  { name: '主文字', token: '--text', value: '#142341' },
+  { name: '次文字', token: '--text-2', value: '#5E7196' },
+  { name: '辅助文字', token: '--text-3', value: '#8195B6' },
+  { name: '主色', token: '--primary', value: '#1F6BFF' },
+]
 
-const statusColors = computed(() => {
-  const dark = themeStore.isDark
-  return [
-    { name: '正常', token: '--success', value: dark ? '#3BD39C' : '#0BAB78' },
-    { name: '注意', token: '--warning', value: dark ? '#F5B74E' : '#D4880D' },
-    { name: '故障', token: '--danger', value: dark ? '#FF7180' : '#EE4D5C' },
-    { name: '强调', token: '--accent', value: dark ? '#42D3E3' : '#24C2D6' },
-  ]
-})
+const statusColors = [
+  { name: '正常', token: '--success', value: '#0BAB78' },
+  { name: '注意', token: '--warning', value: '#D4880D' },
+  { name: '故障', token: '--danger', value: '#EE4D5C' },
+  { name: '强调', token: '--accent', value: '#24C2D6' },
+]
 
 const typeScale = [
   { name: '页面标题', token: '--fs-2xl', size: '33px', sample: '机巢状态总览' },
@@ -76,30 +66,9 @@ const spacing = [4, 8, 12, 16, 20, 24, 32]
         </p>
       </div>
       <div class="hero__side">
-        <div class="theme-switch">
-          <span class="theme-switch__label">预览主题</span>
-          <div class="seg">
-            <button
-              class="seg__item"
-              :class="{ 'is-active': themeStore.resolved === 'light' }"
-              type="button"
-              @click="themeStore.setMode('light')"
-            >
-              浅色 · 日间
-            </button>
-            <button
-              class="seg__item"
-              :class="{ 'is-active': themeStore.resolved === 'dark' }"
-              type="button"
-              @click="themeStore.setMode('dark')"
-            >
-              深色 · 夜间
-            </button>
-          </div>
-        </div>
-        <p class="theme-switch__hint">
+        <p class="theme-fixed">
           <AppIcon name="sun" :size="13" />
-          当前：{{ themeStore.label }}，可在顶栏一键切换
+          当前固定使用明亮主题
         </p>
       </div>
     </section>
@@ -317,26 +286,7 @@ const spacing = [4, 8, 12, 16, 20, 24, 32]
   border: 1px solid var(--border);
 }
 
-.theme-switch {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.theme-switch__label {
-  font-size: var(--fs-xs);
-  color: var(--text-4);
-}
-
-.theme-switch .seg {
-  width: 100%;
-}
-
-.theme-switch .seg__item {
-  flex: 1;
-}
-
-.theme-switch__hint {
+.theme-fixed {
   display: flex;
   align-items: center;
   gap: 6px;

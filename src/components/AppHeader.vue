@@ -6,13 +6,11 @@ import { appMenu } from '@/router'
 import { useToast } from '@/composables/toast'
 import { useAppStore } from '@/stores/app'
 import { useNestStore } from '@/stores/nest'
-import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 
 const appStore = useAppStore()
 const userStore = useUserStore()
 const nestStore = useNestStore()
-const themeStore = useThemeStore()
 const router = useRouter()
 const toast = useToast()
 
@@ -147,16 +145,6 @@ onBeforeUnmount(() => {
       <span class="dot" :class="nestStore.isHealthy ? 'dot--live' : 'dot--err'" />
       {{ statusText }}
     </span>
-
-    <button
-      class="tbtn"
-      type="button"
-      :title="`当前：${themeStore.label} · 点击切换`"
-      :aria-label="`切换主题，当前${themeStore.label}`"
-      @click="themeStore.toggle()"
-    >
-      <AppIcon :name="themeStore.isDark ? 'moon' : 'sun'" :size="20" />
-    </button>
 
     <button class="tbtn" type="button" aria-label="通知" @click="toast.info('暂无新通知')">
       <AppIcon name="bell" :size="20" />
