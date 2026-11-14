@@ -4,6 +4,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import FeaturePending from '@/components/FeaturePending.vue'
 import NestStatusView from '@/views/NestStatusView.vue'
+import { useUserStore } from '@/stores/user'
 
 export interface MenuItem {
   name: string
@@ -64,7 +65,9 @@ export function findMenuTrail(name: string | symbol | null | undefined): MenuTra
 const routes: RouteRecordRaw[] = [
   {
     path: '/login',
-    redirect: '/overview',
+    name: 'login',
+    component: () => import('@/views/LoginView.vue'),
+    meta: { title: '登录', public: true },
   },
   {
     path: '/',
@@ -169,6 +172,14 @@ const router = createRouter({
 router.afterEach((to) => {
   const title = typeof to.meta.title === 'string' ? to.meta.title : ''
   document.title = title ? `${title} · 机巢中枢控制台` : '机巢中枢控制台'
+})
+
+router.beforeEach((to) => {
+  const userStore = useUserStore()
+  if (!userStore.isLoggedIn && to.name !== 'login') {
+    return { name: 'login' }
+  }
+  return true
 })
 
 export default router
