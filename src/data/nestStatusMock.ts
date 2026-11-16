@@ -112,8 +112,6 @@ export const nestStatusMock = {
       label: '配置',
       icon: 'configSolid',
       items: [
-        { label: '串口', icon: 'navSerial', route: 'config-serial' },
-        { label: '控制', icon: 'navControl', route: 'config-control' },
         { label: '摄像头', icon: 'navCamera', route: 'config-camera' },
         { label: 'PLC', icon: 'navPlc', route: 'config-plc' },
         { label: 'MQTT', icon: 'navMqtt', route: 'config-mqtt' },

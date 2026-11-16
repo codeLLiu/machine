@@ -167,7 +167,7 @@ onBeforeUnmount(() => {
             <strong>{{ userStore.displayName }}</strong>
             <small class="mono">{{ userStore.profile?.account }}</small>
           </div>
-          <button type="button" class="user__menu-item" @click="goTo('config-serial')">
+          <button type="button" class="user__menu-item" @click="goTo('config-camera')">
             <AppIcon name="settings" :size="15" />
             配置
           </button>

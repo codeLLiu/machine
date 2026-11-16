@@ -26,8 +26,6 @@ export const appMenu: MenuGroup[] = [
   {
     label: '配置',
     items: [
-      { name: 'config-serial', title: '串口', icon: 'navSerial' },
-      { name: 'config-control', title: '控制', icon: 'navControl' },
       { name: 'config-camera', title: '摄像头', icon: 'navCamera' },
       { name: 'config-plc', title: 'PLC', icon: 'navPlc' },
       { name: 'config-mqtt', title: 'MQTT', icon: 'navMqtt' },
@@ -79,18 +77,6 @@ const routes: RouteRecordRaw[] = [
         name: 'overview',
         component: NestStatusView,
         meta: { title: '机巢状态', standalone: true },
-      },
-      {
-        path: 'config/serial',
-        name: 'config-serial',
-        component: FeaturePending,
-        meta: { title: '串口' },
-      },
-      {
-        path: 'config/control',
-        name: 'config-control',
-        component: FeaturePending,
-        meta: { title: '控制' },
       },
       {
         path: 'config/camera',

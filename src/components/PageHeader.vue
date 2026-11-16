@@ -15,8 +15,6 @@ const toast = useToast()
 
 const SUBTITLE: Record<string, string> = {
   overview: '实时掌握设备、电量与作业流程 · 合肥机巢 A',
-  'config-serial': '轮询设备、波特率与发布主题管理',
-  'config-control': '控制指令与订阅主题映射',
   'config-camera': '视频源、推流地址与录像策略',
   'config-plc': 'PLC 通讯参数与连接自检',
   'config-mqtt': '消息订阅、认证与证书管理',
