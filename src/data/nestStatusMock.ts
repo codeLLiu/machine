@@ -33,24 +33,8 @@ export const nestStatusMock = {
     info: { title: '基本信息' },
   },
 
-  /** 概览卡下方的设备状态条 */
-  statusStrip: [
-    { id: 'nest', icon: 'drone', lines: ['机巢状态：-', 'A机舱：-', 'B机舱：-'] },
-    { id: 'door', icon: 'door', lines: ['舱门：-', 'A停机坪：-', 'B停机坪：-'] },
-    { id: 'flip', icon: 'flip', lines: ['翻转：-'] },
-    { id: 'module', icon: 'grid', lines: ['模组：-（-）'] },
-  ],
-
   /** 设备控制 */
   deviceControls: {
-    power: {
-      title: '电源',
-      on: true,
-      onText: '已开启（写死数据）',
-      offText: '已关闭',
-      primaryLabel: '关闭电源',
-      secondaryLabel: '开启电源',
-    },
     fan: {
       title: '压缩机',
       on: true,
@@ -61,12 +45,14 @@ export const nestStatusMock = {
     },
     battery: {
       title: '电池',
-      activeSlot: 0,
-      slots: ['电池仓1', '电池仓2', '电池仓3', '电池仓4'],
-    },
-    steps: {
-      title: '单步控制',
-      actions: ['开舱门', '关舱门', '规整', '松开规整', '翻转停机坪'],
+      slots: [
+        { label: '电池仓1', online: true },
+        { label: '电池仓2', online: true },
+        { label: '电池仓3', online: true },
+        { label: '电池仓4', online: true },
+        { label: '电池仓5', online: true },
+        { label: '电池仓6', online: true },
+      ],
     },
   },
 

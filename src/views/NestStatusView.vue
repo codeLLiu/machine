@@ -17,14 +17,10 @@ import plcSignalChart from '@/assets/images/plc_signal_chart.png'
 import basicInfoIcon from '@/assets/images/basic_info_icon.png'
 import basicInfoCube from '@/assets/images/basic_info_cube.png'
 import titleMarker from '@/assets/images/device_control_title_marker.png'
-import powerIcon from '@/assets/images/power_icon.png'
-import powerModule from '@/assets/images/power_module.png'
 import fanIcon from '@/assets/images/fan_icon.png'
 import fanIllustration from '@/assets/images/fan_illustration.png'
 import batteryIcon from '@/assets/images/battery_icon.png'
 import batteryIllustration from '@/assets/images/battery_illustration.png'
-import stepControlIcon from '@/assets/images/step_control_icon.png'
-import stepControlIllustration from '@/assets/images/step_control_illustration.png'
 import sidebarWave from '@/assets/images/sidebar_bottom_wave.png'
 
 /** 机巢状态页：按设计稿 1:1 还原，除「基本信息」卡外仍为演示数据 */
@@ -32,25 +28,7 @@ const mock = nestStatusMock
 const navGroups: NestNavGroup[] = mock.nav
 const toast = useToast()
 
-/**
- * 状态条文案按全角冒号拆成「字段名 / 字段值」，
- * 两部分分别着色，让状态读数一眼可辨（原型里整行都是浅灰，辨识度偏低）。
- */
-const statusGroups = computed(() =>
-  mock.statusStrip.map((group) => ({
-    ...group,
-    lines: group.lines.map((line) => {
-      const sep = line.indexOf('：')
-      return sep < 0
-        ? { label: line, value: '' }
-        : { label: line.slice(0, sep + 1), value: line.slice(sep + 1) }
-    }),
-  })),
-)
-
-const powerOn = ref(mock.deviceControls.power.on)
 const fanOn = ref(mock.deviceControls.fan.on)
-const activeSlot = ref(mock.deviceControls.battery.activeSlot)
 const collapsed = ref<Record<string, boolean>>({})
 const appStore = useAppStore()
 /** 移动端抽屉与全局侧栏共用同一状态 */
@@ -94,27 +72,9 @@ function toggleGroup(label: string): void {
   collapsed.value = { ...collapsed.value, [label]: !collapsed.value[label] }
 }
 
-function setPower(on: boolean): void {
-  powerOn.value = on
-  demoAction(on ? mock.deviceControls.power.secondaryLabel : mock.deviceControls.power.primaryLabel)
-}
-
 function setFan(on: boolean): void {
   fanOn.value = on
   demoAction(on ? mock.deviceControls.fan.onLabel : mock.deviceControls.fan.offLabel)
-}
-
-function selectSlot(index: number, label: string): void {
-  activeSlot.value = index
-  demoAction(label)
-}
-
-/** 单步控制激活态：记录最近一次动作，同一时刻只有一个按钮高亮 */
-const activeStep = ref<string | null>(null)
-
-function runStep(action: string): void {
-  activeStep.value = action
-  demoAction(action)
 }
 
 function demoAction(label: string): void {
@@ -257,70 +217,11 @@ function demoAction(label: string): void {
         </article>
       </section>
 
-      <!-- 设备状态条 -->
-      <section class="status-strip">
-        <div
-          v-for="(group, index) in statusGroups"
-          :key="group.id"
-          class="status-strip__group"
-          :class="{ 'status-strip__group--divided': index > 0 }"
-        >
-          <span class="status-strip__icon">
-            <svg v-if="group.icon === 'drone'" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-              <path d="M12 2.8 13.6 9.4l6.9 3.8-6.9 1-1.4 6.6-1.4-6.6-6.9-1 6.9-3.8z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
-              <path d="M10.4 9.6h3.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-            </svg>
-            <svg v-else-if="group.icon === 'door'" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-              <rect x="5.5" y="3.5" width="13" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.7" />
-              <path d="M12 3.5v17M8.8 8.5l2 2-2 2M15.2 8.5l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            <svg v-else-if="group.icon === 'flip'" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-              <path d="M19.5 8.5A8 8 0 0 0 5.9 6L4 8M4 4v4h4M4.5 15.5A8 8 0 0 0 18.1 18l1.9-2M20 20v-4h-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            <svg v-else viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-              <g fill="none" stroke="currentColor" stroke-width="1.7">
-                <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
-                <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
-                <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
-                <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
-              </g>
-            </svg>
-          </span>
-          <div class="status-strip__lines">
-            <span v-for="line in group.lines" :key="line.label + line.value" class="status-strip__line">
-              <b class="status-strip__label">{{ line.label }}</b><span v-if="line.value" class="status-strip__value">{{ line.value }}</span>
-            </span>
-          </div>
-        </div>
-      </section>
-
       <!-- 设备控制 -->
       <section class="dashboard">
         <h2 class="section-title"><img class="section-title__bar" :src="titleMarker" alt="" />设备控制</h2>
 
         <div class="device-grid">
-          <!-- 电源 -->
-          <article class="device-card">
-            <div class="device-card__content">
-              <div class="device-card__head">
-                <img class="dev-icon dev-icon--power" :src="powerIcon" alt="" />
-                <h3>{{ mock.deviceControls.power.title }}</h3>
-                <span class="state-tag state-tag--sm">
-                  <i class="state-tag__dot" />{{ powerOn ? mock.deviceControls.power.onText : mock.deviceControls.power.offText }}
-                </span>
-              </div>
-              <div class="device-card__actions">
-                <button class="ctrl-btn ctrl-btn--primary" type="button" @click="setPower(false)">
-                  <AppIcon name="power" :size="14" />{{ mock.deviceControls.power.primaryLabel }}
-                </button>
-                <button class="ctrl-btn" type="button" @click="setPower(true)">
-                  <AppIcon name="power" :size="14" />{{ mock.deviceControls.power.secondaryLabel }}
-                </button>
-              </div>
-            </div>
-            <img class="device-card__decor device-card__decor--box" :src="powerModule" alt="" />
-          </article>
-
           <!-- 压缩机 -->
           <article class="device-card">
             <div class="device-card__content">
@@ -350,44 +251,17 @@ function demoAction(label: string): void {
                 <span class="state-tag state-tag--sm">写死数据</span>
               </div>
               <div class="slot-row">
-                <button
-                  v-for="(slot, index) in mock.deviceControls.battery.slots"
-                  :key="slot"
+                <span
+                  v-for="slot in mock.deviceControls.battery.slots"
+                  :key="slot.label"
                   class="slot"
-                  :class="{ 'slot--active': activeSlot === index }"
-                  type="button"
-                  @click="selectSlot(index, slot)"
+                  :class="{ 'slot--offline': !slot.online }"
                 >
-                  {{ slot }} <span class="slot__arrow">→</span>
-                </button>
+                  <i class="slot__dot" />{{ slot.label }}：{{ slot.online ? '在线' : '离线' }}
+                </span>
               </div>
             </div>
             <img class="device-card__decor device-card__decor--battery" :src="batteryIllustration" alt="" />
-          </article>
-
-          <!-- 单步控制 -->
-          <article class="device-card">
-            <div class="device-card__content">
-              <div class="device-card__head">
-                <img class="dev-icon dev-icon--step" :src="stepControlIcon" alt="" />
-                <h3>{{ mock.deviceControls.steps.title }}</h3>
-                <span class="state-tag state-tag--sm">写死数据</span>
-              </div>
-              <div class="step-row">
-                <button
-                  v-for="action in mock.deviceControls.steps.actions"
-                  :key="action"
-                  class="step-btn"
-                  :class="{ 'step-btn--active': activeStep === action }"
-                  type="button"
-                  :aria-pressed="activeStep === action"
-                  @click="runStep(action)"
-                >
-                  {{ action }}
-                </button>
-              </div>
-            </div>
-            <img class="device-card__decor device-card__decor--arm" :src="stepControlIllustration" alt="" />
           </article>
         </div>
       </section>
@@ -865,81 +739,6 @@ function demoAction(label: string): void {
   width: calc(var(--s) * 129);
 }
 
-/* ================= 设备状态条 =================
- * 状态读数是值守时最常被扫视的信息，这里比设计稿刻意提高一档对比度：
- * 卡片底色更实、字段名用深墨蓝、字段值用主色蓝，图标加深加粗。
- */
-.status-strip {
-  display: grid;
-  grid-template-columns: 1.15fr 1.15fr 1fr 1fr;
-  align-items: center;
-  min-height: calc(var(--s) * 100);
-  margin-top: calc(var(--s) * 16);
-  padding: calc(var(--s) * 16) calc(var(--s) * 22);
-  border: 1px solid rgba(255, 255, 255, 0.98);
-  border-radius: calc(var(--s) * 16);
-  background: linear-gradient(120deg, rgba(255, 255, 255, 0.96), rgba(244, 249, 255, 0.84));
-  box-shadow: 0 10px 26px rgba(93, 140, 210, 0.13);
-}
-
-.status-strip__group {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--s) * 16);
-  height: 100%;
-  padding-left: calc(var(--s) * 18);
-}
-
-.status-strip__group:first-child {
-  padding-left: 0;
-}
-
-.status-strip__group--divided {
-  border-left: 1px solid #cbdcf6;
-}
-
-.status-strip__icon {
-  display: grid;
-  place-items: center;
-  width: calc(var(--s) * 30);
-  height: calc(var(--s) * 30);
-  flex: 0 0 calc(var(--s) * 30);
-  color: #3f76d0;
-}
-
-.status-strip__icon svg {
-  width: calc(var(--s) * 24);
-  height: calc(var(--s) * 24);
-}
-
-.status-strip__lines {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--s) * 3);
-  color: #243d6b;
-  font-size: calc(var(--fs) * 13);
-  font-weight: 600;
-  line-height: 1.55;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  -webkit-font-smoothing: antialiased;
-}
-
-.status-strip__line {
-  display: block;
-}
-
-/* 字段名深墨蓝、字段值用主色蓝：扫描一行时先看到标签，再读到数值 */
-.status-strip__label {
-  color: #223a68;
-  font-weight: 700;
-}
-
-.status-strip__value {
-  color: #2f6bff;
-  font-weight: 700;
-}
-
 /* ================= 主面板 ================= */
 .dashboard {
   margin-top: calc(var(--s) * 16);
@@ -1006,11 +805,6 @@ function demoAction(label: string): void {
   object-fit: contain;
 }
 
-.dev-icon--power {
-  width: calc(var(--s) * 26);
-  height: calc(var(--s) * 26);
-}
-
 .dev-icon--fan {
   width: calc(var(--s) * 25);
   height: calc(var(--s) * 29);
@@ -1021,14 +815,8 @@ function demoAction(label: string): void {
   height: calc(var(--s) * 28);
 }
 
-.dev-icon--step {
-  width: calc(var(--s) * 24);
-  height: calc(var(--s) * 29);
-}
-
 .device-card__actions,
-.slot-row,
-.step-row {
+.slot-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -1060,9 +848,7 @@ function demoAction(label: string): void {
   height: calc(var(--s) * 14);
 }
 
-.ctrl-btn:hover,
-.step-btn:hover,
-.slot:hover {
+.ctrl-btn:hover {
   border-color: #9dbfff;
   color: #3b7bff;
   transform: translateY(-1px);
@@ -1080,50 +866,30 @@ function demoAction(label: string): void {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--s) * 7);
-  min-width: calc(var(--s) * 96);
+  gap: calc(var(--s) * 6);
   min-height: calc(var(--s) * 30);
   padding: calc(var(--s) * 3) calc(var(--s) * 12);
   border: 1px solid #e6eefd;
   border-radius: calc(var(--s) * 15);
   background: rgba(255, 255, 255, 0.85);
-  color: #8a9cba;
-  font-size: calc(var(--fs) * 12);
-  cursor: pointer;
-  transition: color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
-}
-
-.slot--active,
-.slot--active:hover {
-  border-color: transparent;
-  background: linear-gradient(100deg, #a3a2f4, #c4b6f9);
-  color: #fff;
-  box-shadow: 0 6px 14px rgba(163, 152, 244, 0.3);
-}
-
-.slot__arrow {
-  opacity: 0.75;
-}
-
-.step-btn {
-  min-height: calc(var(--s) * 30);
-  padding: calc(var(--s) * 3) calc(var(--s) * 12);
-  border: 1px solid #e4edfc;
-  border-radius: calc(var(--s) * 15);
-  background: rgba(255, 255, 255, 0.9);
   color: #4a6fb5;
   font-size: calc(var(--fs) * 12);
-  cursor: pointer;
-  transition: color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+  white-space: nowrap;
 }
 
-/* 激活态：与「关闭电源」主按钮一致的蓝紫渐变 */
-.step-btn--active,
-.step-btn--active:hover {
-  border-color: transparent;
-  background: linear-gradient(100deg, #7a86f6 0%, #5aa9f7 100%);
-  color: #fff;
-  box-shadow: 0 6px 14px rgba(105, 139, 240, 0.3);
+.slot__dot {
+  width: calc(var(--s) * 6);
+  height: calc(var(--s) * 6);
+  border-radius: 50%;
+  background: #2fd39a;
+}
+
+.slot--offline {
+  color: #93a6c2;
+}
+
+.slot--offline .slot__dot {
+  background: #c3cfdf;
 }
 
 .device-card__decor {
@@ -1133,11 +899,6 @@ function demoAction(label: string): void {
   transform: translateY(-50%);
   pointer-events: none;
   user-select: none;
-}
-
-.device-card__decor--box {
-  right: calc(var(--s) * 26);
-  width: calc(var(--s) * 170);
 }
 
 .device-card__decor--fan {
@@ -1150,9 +911,11 @@ function demoAction(label: string): void {
   width: calc(var(--s) * 124);
 }
 
-.device-card__decor--arm {
-  right: calc(var(--s) * 20);
-  width: calc(var(--s) * 153);
+/* 较宽桌面：为右侧电池插图预留空间，避免 6 个电池仓状态压到插图上 */
+@media (min-width: 1281px) {
+  .slot-row {
+    padding-right: calc(var(--s) * 150);
+  }
 }
 
 /* 较窄桌面：字号不再缩小，为插图预留空间并允许按钮换行，避免遮挡 */
@@ -1178,27 +941,6 @@ function demoAction(label: string): void {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .status-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px 0;
-  }
-
-  .status-strip__group {
-    min-height: 52px;
-  }
-
-  .status-strip__group--divided {
-    border-left: 0;
-  }
-
-  .status-strip__group:nth-child(even) {
-    border-left: 1px solid #cbdcf6;
-  }
-
-  .status-strip__group:nth-child(odd) {
-    padding-left: 0;
-  }
-
   .device-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1207,9 +949,7 @@ function demoAction(label: string): void {
     padding-right: 130px;
   }
 
-  .device-card__decor--box,
-  .device-card__decor--fan,
-  .device-card__decor--arm {
+  .device-card__decor--fan {
     right: 16px;
     width: 118px;
   }
@@ -1249,14 +989,6 @@ function demoAction(label: string): void {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .status-strip {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .status-strip__group:nth-child(even) {
-    border-left: 0;
-  }
-
   .brand__collapse {
     display: none;
   }
@@ -1267,8 +999,6 @@ function demoAction(label: string): void {
     padding-right: 88px;
   }
 
-  .device-card__decor--box,
-  .device-card__decor--arm,
   .device-card__decor--fan {
     right: 10px;
     width: 80px;
