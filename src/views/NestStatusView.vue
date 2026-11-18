@@ -6,6 +6,8 @@ import NestTopbar from '@/components/NestTopbar.vue'
 import { nestStatusMock, type NestNavGroup, type NestNavItem } from '@/data/nestStatusMock'
 import { useToast } from '@/composables/toast'
 import { useAppStore } from '@/stores/app'
+import { fetchSystem } from '@/api/endpoints'
+import type { SystemInfo } from '@/api/types'
 
 /* 设计稿切图（docs/ui.png → src/assets/images） */
 import statusIcon from '@/assets/images/status_icon.png'
@@ -23,10 +25,9 @@ import batteryIcon from '@/assets/images/battery_icon.png'
 import batteryIllustration from '@/assets/images/battery_illustration.png'
 import stepControlIcon from '@/assets/images/step_control_icon.png'
 import stepControlIllustration from '@/assets/images/step_control_illustration.png'
-import dronePadA from '@/assets/images/drone_pad_A.png'
 import sidebarWave from '@/assets/images/sidebar_bottom_wave.png'
 
-/** 机巢状态页：按设计稿 1:1 还原，当前全部为演示数据，不调用任何后台接口 */
+/** 机巢状态页：按设计稿 1:1 还原，除「基本信息」卡外仍为演示数据 */
 const mock = nestStatusMock
 const navGroups: NestNavGroup[] = mock.nav
 const toast = useToast()
@@ -58,6 +59,17 @@ const mobileNavOpen = computed(() => appStore.mobileNavOpen)
 /** 与串口等页面共用的侧栏折叠状态，移动端仍使用抽屉不折叠 */
 const isMobile = ref(false)
 
+/** 基本信息卡：接口未返回时保持占位，不阻塞页面其余演示内容 */
+const systemInfo = ref<SystemInfo | null>(null)
+
+async function refreshSystemInfo(): Promise<void> {
+  try {
+    systemInfo.value = await fetchSystem()
+  } catch {
+    systemInfo.value = null
+  }
+}
+
 function syncViewport(): void {
   isMobile.value = window.innerWidth <= 900
 }
@@ -65,6 +77,7 @@ function syncViewport(): void {
 onMounted(() => {
   syncViewport()
   window.addEventListener('resize', syncViewport)
+  void refreshSystemInfo()
 })
 
 onBeforeUnmount(() => {
@@ -106,20 +119,6 @@ function runStep(action: string): void {
 
 function demoAction(label: string): void {
   toast.info('演示数据', `「${label}」指令待接入后台`)
-}
-
-/** 流程控制按钮激活态：任务控制（暂停/中止/恢复）互斥，流程指令记录本卡最近一次指令 */
-const flowActiveControl = ref<Record<string, string>>({})
-const flowActiveCommand = ref<Record<string, string>>({})
-
-function runFlowControl(flowId: string, control: string): void {
-  flowActiveControl.value = { ...flowActiveControl.value, [flowId]: control }
-  demoAction(control)
-}
-
-function runFlowCommand(flowId: string, cmd: string): void {
-  flowActiveCommand.value = { ...flowActiveCommand.value, [flowId]: cmd }
-  demoAction(cmd)
 }
 </script>
 
@@ -248,11 +247,11 @@ function runFlowCommand(flowId: string, cmd: string): void {
         <article class="summary-card">
           <div class="summary-card__head">
             <img class="sum-icon" :src="basicInfoIcon" alt="" />
-            <h2>{{ mock.summary.info.title }}（写死数据）</h2>
+            <h2>{{ mock.summary.info.title }}</h2>
           </div>
           <div class="summary-card__line summary-card__line--stack">
-            <div><span class="dash">-</span> 机巢编号：{{ mock.summary.info.code }}</div>
-            <div><span class="dash">&nbsp;</span> 版本：{{ mock.summary.info.version }}</div>
+            <div><span class="dash">-</span> 机巢编号：{{ systemInfo?.deviceId || '--' }}</div>
+            <div><span class="dash">&nbsp;</span> 版本：{{ systemInfo?.ver || '--' }}</div>
           </div>
           <img class="summary-card__decor summary-card__decor--cube" :src="basicInfoCube" alt="" />
         </article>
@@ -295,7 +294,7 @@ function runFlowCommand(flowId: string, cmd: string): void {
         </div>
       </section>
 
-      <!-- 设备控制 + 流程控制 -->
+      <!-- 设备控制 -->
       <section class="dashboard">
         <h2 class="section-title"><img class="section-title__bar" :src="titleMarker" alt="" />设备控制</h2>
 
@@ -322,7 +321,7 @@ function runFlowCommand(flowId: string, cmd: string): void {
             <img class="device-card__decor device-card__decor--box" :src="powerModule" alt="" />
           </article>
 
-          <!-- 风扇 -->
+          <!-- 压缩机 -->
           <article class="device-card">
             <div class="device-card__content">
               <div class="device-card__head">
@@ -389,44 +388,6 @@ function runFlowCommand(flowId: string, cmd: string): void {
               </div>
             </div>
             <img class="device-card__decor device-card__decor--arm" :src="stepControlIllustration" alt="" />
-          </article>
-        </div>
-
-        <h2 class="section-title section-title--flow"><img class="section-title__bar" :src="titleMarker" alt="" />流程控制</h2>
-
-        <div class="flow-grid">
-          <article v-for="flow in mock.flows" :key="flow.id" class="flow-card">
-            <img class="flow-card__drone" :src="dronePadA" alt="" />
-
-            <span class="flow-badge" :class="{ 'flow-badge--purple': flow.id === 'B' }">{{ flow.badge }}</span>
-            <span class="flow-badge">写死数据</span>
-            <p class="flow-current">当前流程 <b>({{ flow.currentCount }})</b>： <span>{{ flow.currentName }}</span></p>
-            <p class="flow-line">
-              当前流程控制：
-              <button
-                v-for="control in flow.controls"
-                :key="control"
-                class="text-btn"
-                :class="{ 'text-btn--active': flowActiveControl[flow.id] === control }"
-                type="button"
-                @click="runFlowControl(flow.id, control)"
-              >
-                {{ control }}
-              </button>
-            </p>
-            <p class="flow-label">流程指令：</p>
-            <div v-for="(row, rowIndex) in flow.commandRows" :key="rowIndex" class="cmd-row">
-              <button
-                v-for="cmd in row"
-                :key="cmd"
-                class="cmd-btn"
-                :class="{ 'cmd-btn--active': flowActiveCommand[flow.id] === cmd }"
-                type="button"
-                @click="runFlowCommand(flow.id, cmd)"
-              >
-                {{ cmd }}
-              </button>
-            </div>
           </article>
         </div>
       </section>
@@ -1005,10 +966,6 @@ function runFlowCommand(flowId: string, cmd: string): void {
   object-fit: contain;
 }
 
-.section-title--flow {
-  margin-top: calc(var(--s) * 20);
-}
-
 .device-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1105,8 +1062,7 @@ function runFlowCommand(flowId: string, cmd: string): void {
 
 .ctrl-btn:hover,
 .step-btn:hover,
-.slot:hover,
-.cmd-btn:hover {
+.slot:hover {
   border-color: #9dbfff;
   color: #3b7bff;
   transform: translateY(-1px);
@@ -1199,153 +1155,10 @@ function runFlowCommand(flowId: string, cmd: string): void {
   width: calc(var(--s) * 153);
 }
 
-/* ================= 流程控制 ================= */
-.flow-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: calc(var(--s) * 18);
-  margin-top: calc(var(--s) * 14);
-}
-
-.flow-card {
-  position: relative;
-  min-height: calc(var(--s) * 292);
-  padding: calc(var(--s) * 20) calc(var(--s) * 22) calc(var(--s) * 22);
-  border: 1px solid var(--line);
-  border-radius: calc(var(--s) * 14);
-  background: var(--surface);
-  box-shadow: 0 6px 16px rgba(100, 145, 215, 0.06);
-}
-
-.flow-card__drone {
-  position: absolute;
-  top: calc(var(--s) * 40);
-  right: calc(var(--s) * 30);
-  width: calc(var(--s) * 167);
-  pointer-events: none;
-  user-select: none;
-}
-
-.flow-badge {
-  display: inline-grid;
-  place-items: center;
-  min-width: calc(var(--s) * 50);
-  min-height: calc(var(--s) * 28);
-  padding: calc(var(--s) * 3) calc(var(--s) * 13);
-  border-radius: calc(var(--s) * 13);
-  background: linear-gradient(100deg, #5fa8f8, #7d9df6);
-  color: #fff;
-  font-size: calc(var(--fs) * 12.5);
-  font-weight: 600;
-  box-shadow: 0 5px 12px rgba(105, 158, 246, 0.28);
-}
-
-.flow-badge--purple {
-  background: linear-gradient(100deg, #a58bf7, #c0a9fb);
-  box-shadow: 0 5px 12px rgba(165, 139, 247, 0.28);
-}
-
-.flow-current {
-  position: relative;
-  z-index: 1;
-  margin-top: calc(var(--s) * 22);
-  color: #2c4a80;
-  font-size: calc(var(--fs) * 13.5);
-  font-weight: 600;
-}
-
-.flow-current b {
-  color: #1f2c4e;
-}
-
-.flow-current span {
-  color: var(--ink-3);
-  font-weight: 500;
-}
-
-.flow-line {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: calc(var(--s) * 10);
-  margin-top: calc(var(--s) * 20);
-  color: #33507f;
-  font-size: calc(var(--fs) * 12.5);
-  font-weight: 600;
-}
-
-.text-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(var(--s) * 29);
-  padding: calc(var(--s) * 3) calc(var(--s) * 14);
-  border: 1px solid #e6eefd;
-  border-radius: calc(var(--s) * 15);
-  background: rgba(255, 255, 255, 0.94);
-  color: #4a6fb5;
-  font-size: calc(var(--fs) * 12.5);
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(90, 135, 205, 0.05);
-  transition: color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
-}
-
-.text-btn:hover {
-  border-color: #9dbfff;
-  color: #3b7bff;
-  transform: translateY(-1px);
-}
-
-/* 激活态：与「关闭电源」主按钮一致的蓝紫渐变 */
-.text-btn--active,
-.text-btn--active:hover,
-.cmd-btn--active,
-.cmd-btn--active:hover {
-  border-color: transparent;
-  background: linear-gradient(100deg, #7a86f6 0%, #5aa9f7 100%);
-  color: #fff;
-  box-shadow: 0 6px 14px rgba(105, 139, 240, 0.3);
-}
-
-.flow-label {
-  margin-top: calc(var(--s) * 20);
-  color: #33507f;
-  font-size: calc(var(--fs) * 12.5);
-  font-weight: 600;
-}
-
-.cmd-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: calc(var(--s) * 10);
-  margin-top: calc(var(--s) * 12);
-  padding-left: calc(var(--s) * 16);
-}
-
-.cmd-btn {
-  min-height: calc(var(--s) * 30);
-  padding: calc(var(--s) * 3) calc(var(--s) * 14);
-  border: 1px solid #e6eefd;
-  border-radius: calc(var(--s) * 15);
-  background: linear-gradient(100deg, rgba(255, 255, 255, 0.95), rgba(233, 241, 255, 0.9));
-  color: #4168b0;
-  font-size: calc(var(--fs) * 12.5);
-  font-weight: 600;
-  cursor: pointer;
-  transition: color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
-}
-
 /* 较窄桌面：字号不再缩小，为插图预留空间并允许按钮换行，避免遮挡 */
 @media (max-width: 1280px) and (min-width: 1021px) {
   .device-card__content {
     padding-right: calc(var(--s) * 150);
-  }
-
-  .flow-card__drone {
-    width: calc(var(--s) * 130);
   }
 }
 
@@ -1386,8 +1199,7 @@ function runFlowCommand(flowId: string, cmd: string): void {
     padding-left: 0;
   }
 
-  .device-grid,
-  .flow-grid {
+  .device-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1405,10 +1217,6 @@ function runFlowCommand(flowId: string, cmd: string): void {
   .device-card__decor--battery {
     right: 22px;
     width: 96px;
-  }
-
-  .flow-card__drone {
-    width: 130px;
   }
 }
 
@@ -1469,12 +1277,6 @@ function runFlowCommand(flowId: string, cmd: string): void {
   .device-card__decor--battery {
     right: 14px;
     width: 66px;
-  }
-
-  .flow-card__drone {
-    right: 12px;
-    width: 92px;
-    opacity: 0.8;
   }
 
   .ctrl-btn {

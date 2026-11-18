@@ -48,6 +48,11 @@ export interface PlcConfig {
   port: number | string
 }
 
+export interface SystemInfo {
+  deviceId: string
+  ver: string
+}
+
 export interface CameraInfo {
   id: number
   name: string

@@ -13,6 +13,7 @@ import type {
   ReadRegisterResult,
   RunStatus,
   StreamResult,
+  SystemInfo,
   WriteRegisterPayload,
 } from './types'
 
@@ -62,6 +63,11 @@ export async function fetchPlcErrors(): Promise<AxisError[]> {
 export async function sendCommand(payload: CmdPayload): Promise<void> {
   const response = await call<ApiResult>('/api/functionDebug', json({ data: {}, ...payload }))
   unwrap(response)
+}
+
+export async function fetchSystem(): Promise<SystemInfo> {
+  const payload = await call<unknown>('/api/getSystem', { method: 'GET' })
+  return unwrap<SystemInfo>(payload)
 }
 
 export async function fetchPlc(): Promise<PlcConfig> {

@@ -16,15 +16,6 @@ export interface NestNavGroup {
   items?: NestNavItem[]
 }
 
-export interface NestFlowCard {
-  id: string
-  badge: string
-  currentCount: number
-  currentName: string
-  controls: string[]
-  commandRows: string[][]
-}
-
 export const nestStatusMock = {
   device: {
     online: true,
@@ -39,7 +30,7 @@ export const nestStatusMock = {
   summary: {
     nest: { title: '机巢状态', state: '正常运行（写死数据）', uptime: '12h 36min（写死数据）' },
     plc: { title: 'PLC', online: true, onlineText: '在线（写死数据）', lastComm: '1分钟前（写死数据）' },
-    info: { title: '基本信息', code: 'MC-2025-001（写死数据）', version: 'v1.0.0（写死数据）' },
+    info: { title: '基本信息' },
   },
 
   /** 概览卡下方的设备状态条 */
@@ -61,12 +52,12 @@ export const nestStatusMock = {
       secondaryLabel: '开启电源',
     },
     fan: {
-      title: '风扇',
+      title: '压缩机',
       on: true,
       onText: '已开启',
       offText: '已关闭',
-      onLabel: '开启风扇',
-      offLabel: '关闭风扇',
+      onLabel: '开启压缩机',
+      offLabel: '关闭压缩机',
     },
     battery: {
       title: '电池',
@@ -78,32 +69,6 @@ export const nestStatusMock = {
       actions: ['开舱门', '关舱门', '规整', '松开规整', '翻转停机坪'],
     },
   },
-
-  /** 流程控制：A 面 / B 面 */
-  flows: [
-    {
-      id: 'A',
-      badge: 'A面',
-      currentCount: 0,
-      currentName: '--',
-      controls: ['暂停任务', '中止任务', '恢复任务'],
-      commandRows: [
-        ['请求起飞', '请求关闭（起飞）', '请求降落', '请求准备关闭（降落）'],
-        ['请求关闭（降落）', '请求重新起飞'],
-      ],
-    },
-    {
-      id: 'B',
-      badge: 'B面',
-      currentCount: 0,
-      currentName: '--',
-      controls: ['暂停任务', '中止任务', '恢复任务'],
-      commandRows: [
-        ['请求起飞', '请求关闭（起飞）', '请求降落', '请求准备关闭（降落）'],
-        ['请求关闭（降落）', '请求重新起飞'],
-      ],
-    },
-  ] satisfies NestFlowCard[],
 
   /** 侧栏导航：与设计稿分组一致，链接到已有页面 */
   nav: [
