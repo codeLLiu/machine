@@ -73,7 +73,7 @@ export const nestStatusMock = {
       icon: 'gearSolid',
       items: [
         { label: '功能调试', icon: 'wrench', route: 'debug-func' },
-        { label: '模拟调试', icon: 'stack', route: 'debug-module' },
+        { label: '单步调试', icon: 'stack', route: 'debug-module' },
         { label: '模块参数', icon: 'navParams', route: 'module-params' },
       ],
     },
