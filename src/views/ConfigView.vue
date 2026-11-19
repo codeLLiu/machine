@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
+import FlvPlayer from '@/components/FlvPlayer.vue'
 import {
   fetchCameras,
   fetchMqtt,
@@ -10,6 +11,8 @@ import {
   saveCameras,
   saveMqtt,
   savePlc,
+  stopStream,
+  startStream,
   uploadCert,
   writeRegisters,
 } from '@/api/endpoints'
@@ -46,6 +49,11 @@ const uploading = ref('')
 
 /* ---------- 摄像头 ---------- */
 const cameras = ref<CameraInfo[]>([])
+const previewEnabled = ref(false)
+const previewLoading = ref(false)
+const singleLoading = ref<Record<number, 'start' | 'stop' | null>>({})
+const previewError = ref('')
+const previewStreams = ref<Record<number, string>>({})
 
 /* ---------- 连通性自检 ---------- */
 const testing = ref(false)
@@ -73,8 +81,87 @@ function toggleSsl(event: Event): void {
   mqtt.value.sslEnable = (event.target as HTMLInputElement).checked ? 1 : 0
 }
 
-function toggleDisabled(camera: CameraInfo, event: Event): void {
-  camera.disabled = (event.target as HTMLInputElement).checked ? 1 : 0
+async function toggleDisabled(camera: CameraInfo, event: Event): Promise<void> {
+  const disabled = (event.target as HTMLInputElement).checked ? 1 : 0
+  const wasDisabled = camera.disabled === 1
+  camera.disabled = disabled
+
+  if (!previewEnabled.value || wasDisabled === (disabled === 1) || !Number.isFinite(camera.id)) return
+
+  singleLoading.value[camera.id] = disabled === 1 ? 'stop' : 'start'
+  try {
+    const results = disabled === 1 ? await stopStream([camera.id]) : await startStream([camera.id])
+    const result = results.find((item) => item.id === camera.id)
+    const success = result?.result === true || result?.result === 1
+
+    if (disabled === 1) {
+      delete previewStreams.value[camera.id]
+    }
+    if (disabled !== 1 && success && (result?.ws || result?.http)) {
+      previewStreams.value[camera.id] = result.ws || result.http!
+    }
+    if (!success && disabled !== 1) {
+      toast.error('视频流启动失败', '请检查摄像头连接和配置')
+    }
+    if (!success && disabled === 1) {
+      toast.warning('视频流已停止播放', '后端停流可能未成功，请稍后检查推流状态')
+    }
+  } catch (error) {
+    delete previewStreams.value[camera.id]
+    toast.error(disabled === 1 ? '视频流已停止播放' : '视频流启动失败', error instanceof Error ? error.message : '请检查设备连接')
+  } finally {
+    singleLoading.value[camera.id] = null
+  }
+}
+
+async function togglePreview(event: Event): Promise<void> {
+  const enabled = (event.target as HTMLInputElement).checked
+  previewEnabled.value = enabled
+  previewError.value = ''
+
+  if (!enabled) {
+    const stopIds = cameras.value
+      .filter((camera) => camera.disabled !== 1 && Number.isFinite(camera.id))
+      .map((camera) => camera.id)
+    previewStreams.value = {}
+    if (!stopIds.length) return
+
+    try {
+      const results = await stopStream(stopIds)
+      const failed = results.filter((result) => !(result.result === true || result.result === 1))
+      if (failed.length) {
+        toast.warning('视频流已关闭播放', `${failed.length} 路后端停流可能未成功`)
+      }
+    } catch (error) {
+      toast.warning('视频流已关闭播放', error instanceof Error ? error.message : '后端停流请求失败')
+    }
+    return
+  }
+
+  previewStreams.value = {}
+  const ids = cameras.value
+    .filter((camera) => camera.disabled !== 1 && Number.isFinite(camera.id))
+    .map((camera) => camera.id)
+  if (!ids.length) {
+    previewError.value = '已开启播放 · 暂无启用通道'
+    return
+  }
+
+  previewLoading.value = true
+  try {
+    const results = await startStream(ids)
+    const streams: Record<number, string> = {}
+    for (const result of results) {
+      const url = result.ws || result.http
+      if (url && (result.result === true || result.result === 1)) streams[result.id] = url
+    }
+    previewStreams.value = streams
+  } catch (error) {
+    previewError.value = error instanceof Error ? error.message : '视频流启动失败'
+    previewEnabled.value = false
+  } finally {
+    previewLoading.value = false
+  }
 }
 
 function selectOption(list: OptionItem[] | undefined, num: number): void {
@@ -213,6 +300,10 @@ async function pickCert(kind: 'ca' | 'cert' | 'key', event: Event): Promise<void
 }
 
 watch(active, () => void loadAll(), { immediate: true })
+
+function scrollToTop(): void {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 </script>
 
 <template>
@@ -484,12 +575,26 @@ watch(active, () => void loadAll(), { immediate: true })
       <header class="panel__head">
         <div>
           <h2 class="panel__title">摄像头通道</h2>
-          <p class="panel__sub">修改 RTSP 地址或禁用通道，保存后下一次推流生效</p>
+          <p class="panel__sub">修改 RTSP 地址、预览视频流或禁用通道</p>
         </div>
         <span class="tag tag--muted">{{ cameras.length }} 路</span>
       </header>
 
       <div class="panel__body">
+        <div class="cam__preview-bar">
+          <label class="switch">
+            <input
+              type="checkbox"
+              :checked="previewEnabled"
+              :disabled="previewLoading"
+              @change="togglePreview"
+            />
+            <span class="switch__track" />
+            {{ previewEnabled ? '关闭播放' : '开启播放' }}
+          </label>
+          <p v-if="previewError" class="cam__preview-error">{{ previewError }}</p>
+        </div>
+
         <div class="cam">
           <div v-for="camera in cameras" :key="camera.id" class="cam__row">
             <div class="cam__head">
@@ -510,11 +615,24 @@ watch(active, () => void loadAll(), { immediate: true })
                 <input
                   type="checkbox"
                   :checked="camera.disabled === 1"
+                  :disabled="singleLoading[camera.id] === 'start' || singleLoading[camera.id] === 'stop'"
                   @change="toggleDisabled(camera, $event)"
                 />
                 <span class="switch__track" />
                 禁用推流
               </label>
+            </div>
+
+            <div v-if="previewEnabled && camera.disabled !== 1" class="cam__preview">
+              <FlvPlayer v-if="previewStreams[camera.id]" :src="previewStreams[camera.id]" />
+              <div v-else-if="previewLoading || singleLoading[camera.id] === 'start'" class="cam__preview-state">
+                <AppIcon name="refresh" :size="18" />
+                <span>正在启动视频流…</span>
+              </div>
+              <div v-else class="cam__preview-state">
+                <AppIcon name="camera" :size="18" />
+                <span>{{ singleLoading[camera.id] === 'stop' ? '正在停止视频流…' : '视频流启动失败' }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -529,6 +647,10 @@ watch(active, () => void loadAll(), { immediate: true })
       </div>
     </article>
   </div>
+
+  <button v-if="active === 'camera'" class="cam__top-btn" type="button" aria-label="回到顶部" @click="scrollToTop">
+    <AppIcon name="chevronUp" :size="18" />
+  </button>
 </template>
 
 <style scoped>
@@ -788,6 +910,37 @@ watch(active, () => void loadAll(), { immediate: true })
   border: 1px solid var(--border);
 }
 
+.cam__preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cam__preview-error {
+  color: var(--danger);
+  font-size: var(--fs-xs);
+}
+
+.cam__preview {
+  margin-top: 12px;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+}
+
+.cam__preview-state {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-4);
+  font-size: var(--fs-xs);
+}
+
 .cam__head {
   display: flex;
   align-items: center;
@@ -843,5 +996,29 @@ watch(active, () => void loadAll(), { immediate: true })
   .tab span {
     display: none;
   }
+}
+
+.cam__top-btn {
+  position: fixed;
+  right: 28px;
+  bottom: 24px;
+  z-index: 20;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+}
+
+.cam__top-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18);
+  color: var(--primary);
 }
 </style>
