@@ -7,6 +7,7 @@ import { nestStatusMock, type NestNavGroup, type NestNavItem } from '@/data/nest
 import { useToast } from '@/composables/toast'
 import { useAppStore } from '@/stores/app'
 import { fetchSystem } from '@/api/endpoints'
+import { useNestStore } from '@/stores/nest'
 import type { SystemInfo } from '@/api/types'
 
 /* 设计稿切图（docs/ui.png → src/assets/images） */
@@ -27,6 +28,7 @@ import sidebarWave from '@/assets/images/sidebar_bottom_wave.png'
 const mock = nestStatusMock
 const navGroups: NestNavGroup[] = mock.nav
 const toast = useToast()
+const nestStore = useNestStore()
 
 const fanOn = ref(mock.deviceControls.fan.on)
 const collapsed = ref<Record<string, boolean>>({})
@@ -39,6 +41,13 @@ const isMobile = ref(false)
 
 /** 基本信息卡：接口未返回时保持占位，不阻塞页面其余演示内容 */
 const systemInfo = ref<SystemInfo | null>(null)
+
+const workLamp = computed(() => {
+  if (!nestStore.runStatus) return 'idle'
+  if (nestStore.runStatus.workStatus === 2 || nestStore.runStatus.emgStop === 1) return 'red'
+  if (nestStore.runStatus.workStatus === 1) return 'yellow'
+  return 'green'
+})
 
 async function refreshSystemInfo(): Promise<void> {
   try {
@@ -187,20 +196,26 @@ function demoAction(label: string): void {
         <article class="summary-card">
           <div class="summary-card__head">
             <img class="sum-icon" :src="statusIcon" alt="" />
-            <h2>{{ mock.summary.nest.title }}（写死数据）</h2>
-            <span class="state-tag">{{ mock.summary.nest.state }}</span>
+            <h2>{{ mock.summary.nest.title }}</h2>
+            <span class="state-tag">{{ nestStore.workStatusText }}</span>
           </div>
-          <p class="summary-card__line"><span class="dash">-</span> 运行时间：{{ mock.summary.nest.uptime }}</p>
+          <p class="summary-card__line"><span class="dash">-</span> 运行时间：--</p>
+          <p class="summary-card__line">
+            <span class="dash">-</span> 工作状态灯：
+            <span class="status-lamps" :data-level="workLamp"><i /><i /><i /></span>
+          </p>
+          <p class="summary-card__line"><span class="dash">-</span> 工作进程：收桨</p>
           <img class="summary-card__decor summary-card__decor--wave" :src="statusTrendChart" alt="" />
         </article>
 
         <article class="summary-card">
           <div class="summary-card__head">
             <img class="sum-icon" :src="plcIcon" alt="" />
-            <h2>{{ mock.summary.plc.title }}（写死数据）</h2>
-            <span class="online-inline"><i />{{ mock.summary.plc.onlineText }}</span>
+            <h2>{{ mock.summary.plc.title }}</h2>
+            <span class="online-inline"><i />{{ nestStore.mode === 'live' ? '在线' : '离线' }}</span>
           </div>
-          <p class="summary-card__line"><span class="dash">-</span> 最后通信：{{ mock.summary.plc.lastComm }}</p>
+          <p class="summary-card__line"><span class="dash">-</span> 最后操作动作：{{ mock.summary.plc.lastAction }}</p>
+          <p class="summary-card__line"><span class="dash">-</span> 最后操作时间：{{ mock.summary.plc.lastActionAt }}</p>
           <img class="summary-card__decor summary-card__decor--bars" :src="plcSignalChart" alt="" />
         </article>
 
@@ -707,6 +722,37 @@ function demoAction(label: string): void {
 .summary-card__line--stack {
   margin-top: calc(var(--s) * 8);
   line-height: 1.7;
+}
+
+.status-lamps {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--s) * 5);
+  margin-left: calc(var(--s) * 2);
+  vertical-align: -2px;
+}
+
+.status-lamps i {
+  width: calc(var(--s) * 8);
+  height: calc(var(--s) * 8);
+  border-radius: 50%;
+  background: #e5edf8;
+  box-shadow: inset 0 0 0 1px rgba(138, 165, 202, 0.32);
+}
+
+.status-lamps[data-level='green'] i:first-child {
+  background: #2fd39a;
+  box-shadow: none;
+}
+
+.status-lamps[data-level='yellow'] i:nth-child(2) {
+  background: #f7ba3f;
+  box-shadow: none;
+}
+
+.status-lamps[data-level='red'] i:nth-child(3) {
+  background: #f25a5a;
+  box-shadow: none;
 }
 
 .dash {

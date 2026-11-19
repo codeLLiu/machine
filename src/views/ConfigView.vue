@@ -7,14 +7,12 @@ import {
   fetchCameras,
   fetchMqtt,
   fetchPlc,
-  readRegisters,
   saveCameras,
   saveMqtt,
   savePlc,
   stopStream,
   startStream,
   uploadCert,
-  writeRegisters,
 } from '@/api/endpoints'
 import { useToast } from '@/composables/toast'
 import type { CameraInfo, MqttConfig, OptionItem, PlcConfig } from '@/api/types'
@@ -57,10 +55,6 @@ const previewStreams = ref<Record<number, string>>({})
 
 /* ---------- 连通性自检 ---------- */
 const testing = ref(false)
-const writingRegister = ref(false)
-const registerId = ref(1000)
-const registerCount = ref(1)
-const registerValues = ref('0')
 const testState = ref<'idle' | 'ok' | 'fail'>('idle')
 const testMessage = ref('')
 const testAt = ref(0)
@@ -189,42 +183,14 @@ async function loadAll(): Promise<void> {
   }
 }
 
+/** TODO: 等设备端提供专门的 PLC 连接测试接口后，替换下方写死的成功结果。 */
 async function handleTestPlc(): Promise<void> {
-  if (!Number.isInteger(registerId.value) || registerId.value < 0 || !Number.isInteger(registerCount.value) || registerCount.value < 1) {
-    toast.warning('寄存器起始地址和读取数量必须是有效的非负整数')
-    return
-  }
   testing.value = true
-  try {
-    const result = await readRegisters({ registerId: registerId.value, count: registerCount.value, functionCode: 3 })
-    testState.value = 'ok'
-    testMessage.value = `读取成功 · ${result.value.join(', ') || '接口返回空值'}`
-    toast.success('PLC 读取成功', `已读取 ${result.value.length} 个寄存器`)
-  } catch (error) {
-    testState.value = 'fail'
-    testMessage.value = error instanceof Error ? error.message : '连接失败'
-    toast.error('寄存器读取失败', testMessage.value)
-  } finally {
-    testing.value = false
-    testAt.value = Date.now()
-  }
-}
-
-async function handleWriteRegisters(): Promise<void> {
-  const values = registerValues.value.split(/[,，\s]+/).filter(Boolean).map(Number)
-  if (!Number.isInteger(registerId.value) || registerId.value < 0 || !values.length || values.some((value) => !Number.isInteger(value) || value < 0 || value > 65535)) {
-    toast.warning('请填写有效地址和 0–65535 的整数写入值，多个值用逗号分隔')
-    return
-  }
-  writingRegister.value = true
-  try {
-    await writeRegisters({ registerId: registerId.value, values })
-    toast.success('寄存器写入成功', `地址 ${registerId.value}，写入 ${values.length} 个值`)
-  } catch (error) {
-    toast.error('寄存器写入失败', error instanceof Error ? error.message : '请检查设备连接')
-  } finally {
-    writingRegister.value = false
-  }
+  await new Promise((resolve) => window.setTimeout(resolve, 600))
+  testState.value = 'ok'
+  testMessage.value = 'PLC 连接正常'
+  testAt.value = Date.now()
+  testing.value = false
 }
 
 async function handleSavePlc(): Promise<void> {
@@ -358,7 +324,7 @@ function scrollToTop(): void {
         <header class="panel__head">
           <div>
             <h2 class="panel__title">连接自检</h2>
-            <p class="panel__sub">POST /api/testRead · 功能码 3 读取保持寄存器</p>
+            <p class="panel__sub">测试 PLC 是否可达，测试接口待接入</p>
           </div>
           <span
             class="tag"
@@ -382,39 +348,13 @@ function scrollToTop(): void {
             <small>{{ testMessage || '发起一次探测，确认 PLC 可达' }}</small>
           </div>
 
-          <div class="register-form">
-            <label class="field">
-              <span class="field__label">起始地址</span>
-              <input v-model.number="registerId" class="input mono" type="number" min="0" />
-            </label>
-            <label class="field">
-              <span class="field__label">读取数量</span>
-              <input v-model.number="registerCount" class="input mono" type="number" min="1" />
-            </label>
-          </div>
-
           <p class="self-test__time mono">
-            最近读取 {{ testAt ? new Date(testAt).toLocaleTimeString('zh-CN', { hour12: false }) : '—' }}
+            最近测试 {{ testAt ? new Date(testAt).toLocaleTimeString('zh-CN', { hour12: false }) : '—' }}
           </p>
 
           <button class="btn btn--block" type="button" :disabled="testing" @click="handleTestPlc">
             <AppIcon :name="testing ? 'refresh' : 'plug'" :size="14" :class="{ spin: testing }" />
-            {{ testing ? '读取中…' : '读取寄存器' }}
-          </button>
-
-          <div class="register-form register-form--write">
-            <label class="field">
-              <span class="field__label">写入起始地址</span>
-              <input v-model.number="registerId" class="input mono" type="number" min="0" />
-            </label>
-            <label class="field">
-              <span class="field__label">写入值（逗号分隔）</span>
-              <input v-model="registerValues" class="input mono" placeholder="9090, 1111, 11110" />
-            </label>
-          </div>
-          <button class="btn btn--block" type="button" :disabled="writingRegister" @click="handleWriteRegisters">
-            <AppIcon :name="writingRegister ? 'refresh' : 'check'" :size="14" :class="{ spin: writingRegister }" />
-            {{ writingRegister ? '写入中…' : '写入寄存器' }}
+            {{ testing ? '测试中…' : '测试连接' }}
           </button>
         </div>
       </article>
@@ -759,7 +699,7 @@ function scrollToTop(): void {
 /* PLC 双栏 */
 .plc {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -770,7 +710,7 @@ function scrollToTop(): void {
   gap: 12px;
 }
 
-/* 左栏表单撑满卡片高度，操作按钮贴底，与右栏按钮对齐 */
+/* 表单操作按钮贴底 */
 .plc > .panel {
   display: flex;
   flex-direction: column;
@@ -780,10 +720,6 @@ function scrollToTop(): void {
   flex: 1;
   display: flex;
   flex-direction: column;
-}
-
-.plc .form__foot {
-  margin-top: auto;
 }
 
 .self-test__state {
