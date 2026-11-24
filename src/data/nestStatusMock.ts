@@ -28,8 +28,10 @@ export const nestStatusMock = {
 
   /** 顶部三张概览卡 */
   summary: {
-    nest: { title: '机巢状态', state: '正常运行（写死数据）', uptime: '12h 36min（写死数据）' },
-    plc: { title: 'PLC', online: true, onlineText: '在线（写死数据）', lastComm: '1分钟前（写死数据）' },
+    nest: { title: '机巢状态' },
+    plc: {
+      title: 'PLC',
+    },
     info: { title: '基本信息' },
   },
 

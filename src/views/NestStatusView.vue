@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import NestTopbar from '@/components/NestTopbar.vue'
 import { nestStatusMock, type NestNavGroup, type NestNavItem } from '@/data/nestStatusMock'
+import { useNestStore } from '@/stores/nest'
 import { useToast } from '@/composables/toast'
 import { useAppStore } from '@/stores/app'
 import { fetchSystem } from '@/api/endpoints'
@@ -27,6 +28,7 @@ import sidebarWave from '@/assets/images/sidebar_bottom_wave.png'
 const mock = nestStatusMock
 const navGroups: NestNavGroup[] = mock.nav
 const toast = useToast()
+const nestStore = useNestStore()
 
 const fanOn = ref(mock.deviceControls.fan.on)
 const collapsed = ref<Record<string, boolean>>({})
@@ -48,6 +50,67 @@ async function refreshSystemInfo(): Promise<void> {
   }
 }
 
+/** 机巢运行时长：dockUptime 已由后端按 xx天xx时xx分xx秒 格式化，直接展示；
+ *  兼容后端偶发返回纯数字（按秒）的情况，统一换算成同一格式。 */
+const nestUptime = computed(() => {
+  const text = String(nestStore.runStatus?.dockUptime ?? '').trim()
+  if (!text) return '--'
+  if (!/^-?\d+$/.test(text)) return text
+  const raw = Number(text)
+  if (!Number.isFinite(raw) || raw <= 0) return '--'
+  const totalSeconds = Math.floor(raw)
+  const days = Math.floor(totalSeconds / 86400)
+  const hours = Math.floor((totalSeconds % 86400) / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  return `${days}天${hours}时${minutes}分${seconds}秒`
+})
+
+function statusLightClass(color: 'green' | 'yellow' | 'red', state?: number): string {
+  const ledState = state ?? 0
+  if (ledState === 0) return 'status-light--off'
+  const blink = ledState === 2 ? 'slow' : ledState === 3 ? 'fast' : ''
+  return blink ? `status-light--${color} status-light--${blink}` : `status-light--${color}`
+}
+
+const workStatusText = computed(() => {
+  const workStatus = nestStore.runStatus?.workStatus ?? 0
+  if (workStatus === 1) return '运行中'
+  if (workStatus === 2) return '故障'
+  return '空闲当中'
+})
+
+const workStatusClass = computed(() => {
+  const workStatus = nestStore.runStatus?.workStatus ?? 0
+  if (workStatus === 1) return 'online-inline--green'
+  if (workStatus === 2) return 'online-inline--red'
+  return 'online-inline--yellow'
+})
+
+/** 后端时间可能是时间戳（数字/数字字符串，秒或毫秒）或日期字符串，统一组装成 YYYY-MM-DD HH:mm:ss */
+function formatOpTime(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === '') return '--'
+
+  const text = String(value).trim()
+  let time: number
+
+  if (/^-?\d+$/.test(text)) {
+    // 纯数字按时间戳处理：10 位为秒，13 位为毫秒
+    const numeric = Number(text)
+    time = numeric < 1e11 ? numeric * 1000 : numeric
+  } else {
+    // Date.parse 对 YYYY-MM-DD HH:mm:ss 在部分浏览器返回 NaN，回退成 YYYY/MM/DD 再解析
+    time = Date.parse(text)
+    if (Number.isNaN(time)) time = Date.parse(text.replace(/-/g, '/'))
+  }
+
+  if (Number.isNaN(time)) return text || '--'
+  const date = new Date(time)
+  if (Number.isNaN(date.getTime())) return text || '--'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
 function syncViewport(): void {
   isMobile.value = window.innerWidth <= 900
 }
@@ -56,10 +119,12 @@ onMounted(() => {
   syncViewport()
   window.addEventListener('resize', syncViewport)
   void refreshSystemInfo()
+  nestStore.startPolling(5000)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', syncViewport)
+  nestStore.stopPolling()
 })
 
 const isMini = computed(() => appStore.sidebarCollapsed && !isMobile.value)
@@ -185,33 +250,88 @@ function demoAction(label: string): void {
       <!-- 顶部三张概览卡 -->
       <section class="summary-grid">
         <article class="summary-card">
-          <div class="summary-card__head">
-            <img class="sum-icon" :src="statusIcon" alt="" />
-            <h2>{{ mock.summary.nest.title }}（写死数据）</h2>
-            <span class="state-tag">{{ mock.summary.nest.state }}</span>
+          <div class="summary-card__content">
+            <div class="summary-card__body">
+              <div class="summary-card__head">
+                <img class="sum-icon" :src="statusIcon" alt="" />
+                <h2>{{ mock.summary.nest.title }}</h2>
+                <span
+                  class="online-inline"
+                  :class="workStatusClass"
+                >
+                  <i />{{ workStatusText }}
+                </span>
+              </div>
+              <div class="summary-card__line summary-card__line--stack">
+                <div>
+                  <span class="dash">•</span>
+                  <span class="dash_title">运行时间：</span>
+                  <span class="dash_text">{{ nestUptime }}</span>
+                </div>
+                <div class="status-light-row">
+                  <span class="dash">•</span>
+                  <span class="dash_title" style="margin-left: -4px;">工作状态灯：</span>
+                  <span class="dash_text">
+                    <i class="status-light" :class="statusLightClass('green', nestStore.runStatus?.greenLed)" title="绿灯" />
+                    <i class="status-light" :class="statusLightClass('yellow', nestStore.runStatus?.yellowLed)" title="黄灯" />
+                    <i class="status-light" :class="statusLightClass('red', nestStore.runStatus?.redLed)" title="红灯" />
+                  </span>
+                </div>
+                <div>
+                  <span class="dash">•</span>
+                  <span class="dash_title">工作进程：</span>
+                  <span class="dash_text">{{ nestStore.runStatus?.workMsg || '--' }}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <p class="summary-card__line"><span class="dash">-</span> 运行时间：{{ mock.summary.nest.uptime }}</p>
           <img class="summary-card__decor summary-card__decor--wave" :src="statusTrendChart" alt="" />
         </article>
 
         <article class="summary-card">
-          <div class="summary-card__head">
-            <img class="sum-icon" :src="plcIcon" alt="" />
-            <h2>{{ mock.summary.plc.title }}（写死数据）</h2>
-            <span class="online-inline"><i />{{ mock.summary.plc.onlineText }}</span>
+          <div class="summary-card__content">
+            <div class="summary-card__body">
+              <div class="summary-card__head">
+                <img class="sum-icon" :src="plcIcon" alt="" />
+                <h2>{{ mock.summary.plc.title }}</h2>
+              </div>
+              <div class="summary-card__line summary-card__line--stack" style="margin-top: 3vh;">
+                <div>
+                  <span class="dash">•</span>
+                  <span class="dash_title">最后操作动作：</span>
+                  <span class="dash_text">{{ nestStore.runStatus?.lastAction || '--' }}</span>
+                </div>
+                <div>
+                  <span class="dash">•</span>
+                  <span class="dash_title">最后操作时间：</span>
+                  <span class="dash_text">{{ formatOpTime(nestStore.runStatus?.lastActionTime) }}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <p class="summary-card__line"><span class="dash">-</span> 最后通信：{{ mock.summary.plc.lastComm }}</p>
-          <img class="summary-card__decor summary-card__decor--bars" :src="plcSignalChart" alt="" />
+          <img class="summary-card__decor summary-card__decor--bars" :src="plcSignalChart" alt="" style=""/>
         </article>
 
         <article class="summary-card">
-          <div class="summary-card__head">
-            <img class="sum-icon" :src="basicInfoIcon" alt="" />
-            <h2>{{ mock.summary.info.title }}</h2>
-          </div>
-          <div class="summary-card__line summary-card__line--stack">
-            <div><span class="dash">-</span> 机巢编号：{{ systemInfo?.deviceId || '--' }}</div>
-            <div><span class="dash">&nbsp;</span> 版本：{{ systemInfo?.ver || '--' }}</div>
+          <div class="summary-card__content">
+            <div class="summary-card__body">
+              <div class="summary-card__head">
+                <img class="sum-icon" :src="basicInfoIcon" alt="" />
+                <h2>{{ mock.summary.info.title }}</h2>
+              </div>
+              <div class="summary-card__line summary-card__line--stack" style="margin-top: 3vh;">
+                <div>
+                  <span class="dash">•</span>
+                  <span class="dash_title">机巢编号：</span>
+                  <span class="dash_text">{{ systemInfo?.deviceId || '--' }}</span>
+                </div>
+                <div>
+                  <span class="dash">•</span>
+                  <span class="dash_title">版本：</span>
+                  <span class="dash_text">{{ systemInfo?.ver || '--' }}</span>
+                </div>
+              </div>
+            </div>
           </div>
           <img class="summary-card__decor summary-card__decor--cube" :src="basicInfoCube" alt="" />
         </article>
@@ -620,13 +740,14 @@ function demoAction(label: string): void {
   display: grid;
   grid-template-columns: 1fr 1fr 1.16fr;
   gap: calc(var(--s) * 18);
+
 }
 
 .summary-card {
   position: relative;
   overflow: hidden;
   min-height: calc(var(--s) * 124);
-  padding: calc(var(--s) * 18) calc(var(--s) * 20);
+  padding: calc(var(--s) * 16) calc(var(--s) * 20);
   border: 1px solid rgba(255, 255, 255, 0.92);
   border-radius: calc(var(--s) * 16);
   background: linear-gradient(120deg, rgba(255, 255, 255, 0.82), rgba(244, 249, 255, 0.62));
@@ -634,24 +755,37 @@ function demoAction(label: string): void {
 }
 
 .summary-card__head {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--s) * 10);
+  white-space: nowrap;
+}
+
+.summary-card__content {
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: calc(var(--s) * 12);
+  gap: calc(var(--s) * 14);
+  height: 100%;
+  padding-right: calc(var(--s) * 176);
+}
+.summary-card__body {
+  min-width: 0;
+  height: 100%;
 }
 
 .summary-card h2 {
   font-size: calc(var(--fs) * 18);
   font-weight: 700;
-  color: #1f2c4e;
+  color: #23375f;
   letter-spacing: 0.01em;
 }
 
 .sum-icon {
-  width: calc(var(--s) * 52);
-  height: calc(var(--s) * 52);
-  flex: 0 0 calc(var(--s) * 52);
+  width: calc(var(--s) * 42);
+  height: calc(var(--s) * 42);
+  flex: 0 0 calc(var(--s) * 42);
   object-fit: contain;
 }
 
@@ -668,6 +802,61 @@ function demoAction(label: string): void {
   white-space: nowrap;
 }
 
+.status-light {
+  width: calc(var(--s) * 10);
+  height: calc(var(--s) * 10);
+  flex: 0 0 calc(var(--s) * 10);
+  border-radius: 50%;
+  background: #2fd39a;
+  box-shadow: 0 0 0 calc(var(--s) * 3) rgba(47, 211, 154, 0.18);
+}
+
+.status-light--green {
+  background: #2fd39a;
+  box-shadow: 0 0 0 calc(var(--s) * 3) rgba(47, 211, 154, 0.18);
+}
+
+.status-light--yellow {
+  background: #f6b73c;
+  box-shadow: 0 0 0 calc(var(--s) * 3) rgba(246, 183, 60, 0.2);
+}
+
+.status-light--red {
+  background: #f45b5b;
+  box-shadow: 0 0 0 calc(var(--s) * 3) rgba(244, 91, 91, 0.18);
+}
+
+.status-light--off {
+  background: #b9c3d5;
+  box-shadow: none;
+}
+
+.status-light--slow {
+  animation: status-light-slow 1.6s ease-in-out infinite;
+}
+
+.status-light--fast {
+  animation: status-light-fast 0.8s ease-in-out infinite;
+}
+
+@keyframes status-light-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes status-light-fast {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
 .state-tag--sm {
   padding: calc(var(--s) * 3) calc(var(--s) * 8);
 }
@@ -682,10 +871,28 @@ function demoAction(label: string): void {
 .online-inline {
   display: inline-flex;
   align-items: center;
+  padding: calc(var(--s) * 3) calc(var(--s) * 10);
+  border-radius: calc(var(--s) * 16);
+  background: rgba(226, 247, 236, 0.85);
   gap: calc(var(--s) * 5);
   color: #23b183;
-  font-size: calc(var(--fs) * 11.5);
+  font-size: calc(var(--fs) * 11);
   font-weight: 600;
+}
+
+.online-inline--green {
+  color: #23b183;
+  background: rgba(226, 247, 236, 0.85);
+}
+
+.online-inline--yellow {
+  color: #b07814;
+  background: rgba(255, 246, 224, 0.9);
+}
+
+.online-inline--red {
+  color: #d45b5b;
+  background: rgba(254, 236, 236, 0.9);
 }
 
 .online-inline i {
@@ -695,48 +902,85 @@ function demoAction(label: string): void {
   background: #2fd39a;
 }
 
+.online-inline--green i {
+  background: #2fd39a;
+}
+
+.online-inline--yellow i {
+  background: #f6b73c;
+}
+
+.online-inline--red i {
+  background: #d45b5b;
+}
+
+.status-light-row {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--s) * 5);
+}
+
+.status-light-row .status-light {
+  margin-left: calc(var(--s) * 6);
+}
+
+/* 状态灯值区：保证三盏灯横向排列 */
+.status-light-row .dash_text {
+  display: inline-flex;
+  align-items: center;
+}
+
 .summary-card__line {
   position: relative;
   z-index: 1;
   margin-top: calc(var(--s) * 12);
-  padding-left: calc(var(--s) * 10);
-  color: #6d82a3;
+  color: #4a6394;
   font-size: calc(var(--fs) * 12.5);
 }
 
 .summary-card__line--stack {
-  margin-top: calc(var(--s) * 8);
-  line-height: 1.7;
+  margin-top: calc(var(--s) * 12);
+  line-height: 1.8;
+  white-space: nowrap;
 }
 
 .dash {
-  color: #a9bbd4;
-  margin-right: 2px;
+  color: #4a6394;
+  margin-right: calc(var(--s) * 6);
+  padding-left: 0.3vw;
+}
+.dash_title {
+  font-weight: 520;
+  font-size: 12px;
+  letter-spacing: 0.5px;
 }
 
 .summary-card__decor {
   position: absolute;
   z-index: 0;
+  top: 50%;
+  transform: translateY(-50%);
   pointer-events: none;
   user-select: none;
 }
 
 .summary-card__decor--wave {
-  right: calc(var(--s) * 14);
-  bottom: calc(var(--s) * 10);
-  width: calc(var(--s) * 140);
+  right: calc(var(--s) * 24);
+  top: 64%;
+  transform: translateY(-50%);
+  width: calc(var(--s) * 153);
 }
 
 .summary-card__decor--bars {
-  right: calc(var(--s) * 26);
-  bottom: calc(var(--s) * 10);
-  width: calc(var(--s) * 110);
+  right: calc(var(--s) * 24);
+  top: 64%;
+  width: calc(var(--s) * 143);
 }
 
 .summary-card__decor--cube {
-  right: calc(var(--s) * 20);
-  bottom: calc(var(--s) * 10);
-  width: calc(var(--s) * 129);
+  right: calc(var(--s) * 28);
+  top: 64%;
+  width: calc(var(--s) * 143);
 }
 
 /* ================= 主面板 ================= */
