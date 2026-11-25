@@ -3,7 +3,6 @@ import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import NestTopbar from '@/components/NestTopbar.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
-import AppToast from '@/components/AppToast.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { useAppStore } from '@/stores/app'
 import { useNestStore } from '@/stores/nest'
@@ -56,7 +55,6 @@ onBeforeUnmount(() => {
       </main>
     </div>
 
-    <AppToast />
   </div>
 </template>
 

@@ -50,7 +50,7 @@ async function start(ids: number[]): Promise<void> {
       toast.warning('推流未启动', '请检查摄像头是否被禁用或设备离线')
     }
   } catch (error) {
-    toast.error('推流失败', error instanceof Error ? error.message : '请检查网络')
+    toast.apiError('推流失败', error, '请检查网络')
   } finally {
     ids.forEach((id) => setBusy(id, false))
     void nestStore.refreshCameras()
@@ -70,7 +70,7 @@ async function stop(ids: number[]): Promise<void> {
     })
     toast.info('已停止推流', `共 ${ids.length} 路`)
   } catch (error) {
-    toast.error('停止失败', error instanceof Error ? error.message : '请检查网络')
+    toast.apiError('停止失败', error, '请检查网络')
   } finally {
     ids.forEach((id) => setBusy(id, false))
     void nestStore.refreshCameras()

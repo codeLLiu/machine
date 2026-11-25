@@ -242,7 +242,7 @@ async function toggleCompressor(): Promise<void> {
       toast.warning('状态刷新失败', nestStore.errorMessage || '压缩机状态可能尚未更新')
     }
   } catch (error) {
-    toast.error('操作失败', error instanceof Error ? error.message : '压缩机控制指令发送失败')
+    toast.apiError('操作失败', error, '压缩机控制指令发送失败')
   } finally {
     compressorBusy.value = false
   }

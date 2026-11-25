@@ -1,19 +1,44 @@
 const BASE = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, '') ?? ''
 const TIMEOUT = 8000
 
+export interface ApiErrorContext {
+  httpStatus?: number
+  method?: string
+  path?: string
+  responseBody?: string
+}
+
 export class ApiError extends Error {
   code: number
+  httpStatus?: number
+  method?: string
+  path?: string
+  responseBody?: string
 
-  constructor(message: string, code = 0) {
+  constructor(message: string, code = 0, context: ApiErrorContext = {}) {
     super(message)
     this.name = 'ApiError'
     this.code = code
+    this.httpStatus = context.httpStatus
+    this.method = context.method
+    this.path = context.path
+    this.responseBody = context.responseBody
   }
+}
+
+type HttpErrorListener = (error: ApiError) => void
+
+let httpErrorListener: HttpErrorListener | null = null
+
+/** 由应用入口注册全局 HTTP 错误提示，避免请求层直接依赖 UI。 */
+export function setHttpErrorListener(listener: HttpErrorListener | null): void {
+  httpErrorListener = listener
 }
 
 async function raw<T>(path: string, init: RequestInit = {}): Promise<T> {
   const controller = new AbortController()
   const timer = window.setTimeout(() => controller.abort(), TIMEOUT)
+  const method = (init.method ?? 'GET').toUpperCase()
   let response: Response
 
   try {
@@ -27,16 +52,27 @@ async function raw<T>(path: string, init: RequestInit = {}): Promise<T> {
     })
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new ApiError('请求超时，请检查设备连接')
+      throw new ApiError('请求超时，请检查设备连接', 0, { method, path })
     }
-    throw new ApiError('无法连接设备接口，请检查网络和接口服务')
+    throw new ApiError('无法连接设备接口，请检查网络和接口服务', 0, { method, path })
   } finally {
     window.clearTimeout(timer)
   }
 
   if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    throw new ApiError(body || `请求失败（HTTP ${response.status}）`, response.status)
+    const responseBody = await response.text().catch(() => '')
+    const apiError = new ApiError(
+      `${method} ${path} 请求失败（HTTP ${response.status}）`,
+      response.status,
+      {
+        httpStatus: response.status,
+        method,
+        path,
+        responseBody,
+      },
+    )
+    httpErrorListener?.(apiError)
+    throw apiError
   }
 
   const text = await response.text()
@@ -45,7 +81,11 @@ async function raw<T>(path: string, init: RequestInit = {}): Promise<T> {
   try {
     return JSON.parse(text) as T
   } catch {
-    throw new ApiError('接口响应不是合法的 JSON')
+    throw new ApiError(`${method} ${path} 响应不是合法的 JSON`, response.status, {
+      method,
+      path,
+      responseBody: text,
+    })
   }
 }
 

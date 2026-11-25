@@ -68,7 +68,7 @@ async function handleSaveSystem(): Promise<void> {
     await setSystem(reportInterval.value)
     toast.success('系统参数已保存', `上报间隔 ${reportInterval.value} 秒`)
   } catch (error) {
-    toast.error('保存失败', error instanceof Error ? error.message : '请稍后重试')
+    toast.apiError('保存失败', error, '请稍后重试')
   } finally {
     savingSystem.value = false
   }
@@ -89,7 +89,7 @@ async function confirmRun(): Promise<void> {
       toast.success('系统重启指令已下发', '设备将离线 1–2 分钟')
     }
   } catch (error) {
-    toast.error('操作失败', error instanceof Error ? error.message : '请稍后重试')
+    toast.apiError('操作失败', error, '请稍后重试')
   } finally {
     busyConfirm.value = false
     pending.value = null

@@ -50,7 +50,7 @@ async function handleRead(): Promise<void> {
     hasRead.value = true
     toast.success(`读取成功，共 ${result.value.length} 个寄存器`, result.msg)
   } catch (error) {
-    toast.error('读取失败', error instanceof Error ? error.message : '请检查 PLC 连接')
+    toast.apiError('读取失败', error, '请检查 PLC 连接')
   } finally {
     reading.value = false
   }
@@ -68,7 +68,7 @@ async function handleWrite(): Promise<void> {
     toast.success('写入成功', `地址 ${writeForm.registerId} · ${values.length} 个值`)
     if (hasRead.value) void handleRead()
   } catch (error) {
-    toast.error('写入失败', error instanceof Error ? error.message : '请检查 PLC 连接')
+    toast.apiError('写入失败', error, '请检查 PLC 连接')
   } finally {
     writing.value = false
     confirmOpen.value = false

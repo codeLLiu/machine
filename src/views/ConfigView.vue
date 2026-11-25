@@ -108,7 +108,7 @@ async function toggleDisabled(camera: CameraInfo, event: Event): Promise<void> {
     }
   } catch (error) {
     delete previewStreams.value[camera.id]
-    toast.error(disabled === 1 ? '视频流已停止播放' : '视频流启动失败', error instanceof Error ? error.message : '请检查设备连接')
+    toast.apiError(disabled === 1 ? '视频流已停止播放' : '视频流启动失败', error, '请检查设备连接')
   } finally {
     singleLoading.value[camera.id] = null
   }
@@ -133,7 +133,7 @@ async function togglePreview(event: Event): Promise<void> {
         toast.warning('视频流已关闭播放', `${failed.length} 路后端停流可能未成功`)
       }
     } catch (error) {
-      toast.warning('视频流已关闭播放', error instanceof Error ? error.message : '后端停流请求失败')
+      toast.apiError('视频流已关闭播放', error, '后端停流请求失败')
     }
     return
   }
@@ -183,7 +183,7 @@ async function loadAll(): Promise<void> {
       cameras.value = await fetchCameras()
     }
   } catch (error) {
-    toast.error('读取配置失败', error instanceof Error ? error.message : '请检查设备连接')
+    toast.apiError('读取配置失败', error, '请检查设备连接')
   } finally {
     loading.value = false
   }
@@ -203,7 +203,7 @@ async function handleTestPlc(): Promise<void> {
   } catch (error) {
     testState.value = 'fail'
     testMessage.value = error instanceof Error ? error.message : '连接失败'
-    toast.error('寄存器读取失败', testMessage.value)
+    toast.apiError('寄存器读取失败', error, testMessage.value)
   } finally {
     testing.value = false
     testAt.value = Date.now()
@@ -221,7 +221,7 @@ async function handleWriteRegisters(): Promise<void> {
     await writeRegisters({ registerId: registerId.value, values })
     toast.success('寄存器写入成功', `地址 ${registerId.value}，写入 ${values.length} 个值`)
   } catch (error) {
-    toast.error('寄存器写入失败', error instanceof Error ? error.message : '请检查设备连接')
+    toast.apiError('寄存器写入失败', error, '请检查设备连接')
   } finally {
     writingRegister.value = false
   }
@@ -242,7 +242,7 @@ async function handleSavePlc(): Promise<void> {
     await savePlc({ ip: plc.ip.trim(), port })
     toast.success('PLC 参数已保存', `${plc.ip.trim()}:${port}`)
   } catch (error) {
-    toast.error('保存失败', error instanceof Error ? error.message : '请稍后重试')
+    toast.apiError('保存失败', error, '请稍后重试')
   } finally {
     saving.value = false
   }
@@ -258,7 +258,7 @@ async function handleSaveMqtt(): Promise<void> {  if (!mqtt.value) return
     await saveMqtt(mqtt.value)
     toast.success('MQTT 参数已保存', '重连后生效')
   } catch (error) {
-    toast.error('保存失败', error instanceof Error ? error.message : '请稍后重试')
+    toast.apiError('保存失败', error, '请稍后重试')
   } finally {
     saving.value = false
   }
@@ -271,7 +271,7 @@ async function handleSaveCameras(): Promise<void> {
     nestStore.setCameras(cameras.value)
     toast.success('摄像头配置已保存', `${cameras.value.length} 路`)
   } catch (error) {
-    toast.error('保存失败', error instanceof Error ? error.message : '请稍后重试')
+    toast.apiError('保存失败', error, '请稍后重试')
   } finally {
     saving.value = false
   }
@@ -292,7 +292,7 @@ async function pickCert(kind: 'ca' | 'cert' | 'key', event: Event): Promise<void
     if (kind === 'key') mqtt.value.cert.keyFile = file.name
     toast.success('证书已上传', file.name)
   } catch (error) {
-    toast.error('上传失败', error instanceof Error ? error.message : '请检查文件格式')
+    toast.apiError('上传失败', error, '请检查文件格式')
   } finally {
     uploading.value = ''
     input.value = ''
