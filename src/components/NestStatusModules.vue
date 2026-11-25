@@ -724,7 +724,6 @@ async function toggleCompressor(): Promise<void> {
 }
 
 .control-fan img {
-  width: min(100%, calc(var(--s) * 112));
   object-fit: contain;
 }
 
