@@ -47,8 +47,7 @@ New-Item -ItemType Junction -Path C:\nvm4w\nodejs -Target D:\nvm\v22.23.4
 
 | 路由 | 页面 | 核心内容 |
 | --- | --- | --- |
-| `/overview` | 机巢态势 | 4 张实时指标卡（数值滚动补间）+ **SVG 机巢剖面图** + 环境监测 + 快捷动作条（开关舱门 / 升降平台）+ 6 项子系统状态 + 6 轴伺服状态 |
-| `/control` | 远程控制 | 状态条 + **系统操作**（全部使能 / 禁止 / 复位 / 回初始位）+ **单步控制** 5 组开/关成对按钮 + 特殊动作 + **A/B 面流程控制** + 模块坐标板 + 操作日志 |
+| `/overview` | 机巢态势 | 4 张实时指标卡（数值滚动补间）+ **SVG 机巢剖面图** + 环境监测 + 6 项子系统状态 + 6 轴伺服状态 |
 | `/monitor` | 视频监控 | 三路摄像头画面卡（推流时为 LIVE HUD + 扫描线动效）、单路/全部推流与停流、RTSP 地址复制、通道清单表 |
 | `/config` | 设备配置 | PLC 通讯参数（含连接自检）、MQTT（连接/认证/SSL 证书上传）、摄像头配置三个标签页 |
 | `/debug` | 调试诊断 | 三个工作区：**模块调试**（13 个模块 / 组合模块、位置预设、速度与模式、执行与停止、24 路信号矩阵、日志过滤）、**寄存器读写**、**系统与诊断** |
@@ -86,7 +85,7 @@ src/
 | 模块 | 接口 |
 | --- | --- |
 | 运行状态 | `GET /api/getRunStatus`、`GET /api/getPlcErr` |
-| 指令 | `POST /api/setCmd` |
+| 设备控制 | `POST /api/functionDebug` |
 | PLC | `POST /api/getPlc`、`POST /api/savePlc` |
 | MQTT | `POST /api/getMqtt`、`POST /api/saveMqtt`、`POST /api/saveCertificate` |
 | 摄像头 | `POST /api/getCamera`、`POST /api/saveCamera`、`POST /api/startStream`、`POST /api/stopStream` |

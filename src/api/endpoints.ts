@@ -4,7 +4,6 @@ import type {
   AxisError,
   CameraConfigPayload,
   CameraInfo,
-  CmdPayload,
   DebugPayload,
   MqttConfig,
   MqttConfigPayload,
@@ -73,9 +72,9 @@ export async function fetchPlcErrors(): Promise<AxisError[]> {
   return []
 }
 
-export async function sendCommand(payload: CmdPayload): Promise<void> {
-  const response = await call<ApiResult>('/api/functionDebug', json({ data: {}, ...payload }))
-  unwrap(response)
+export async function sendFunctionCommand(payload: DebugPayload): Promise<void> {
+  const response = await call<unknown>('/api/functionDebug', json(payload))
+  if (response !== undefined) unwrap(response)
 }
 
 export async function fetchSystem(): Promise<SystemInfo> {

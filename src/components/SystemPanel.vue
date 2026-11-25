@@ -4,14 +4,12 @@ import AppConfirm from '@/components/AppConfirm.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { reboot, setSystem } from '@/api/endpoints'
 import { useToast } from '@/composables/toast'
-import { useControlStore } from '@/stores/control'
 import { useNestStore } from '@/stores/nest'
 
-type PendingKind = 'reset' | 'rebootSoft' | 'rebootSys' | null
+type PendingKind = 'rebootSoft' | 'rebootSys' | null
 
 const toast = useToast()
 const nestStore = useNestStore()
-const controlStore = useControlStore()
 
 const reportInterval = ref(30)
 const savingSystem = ref(false)
@@ -29,14 +27,6 @@ const faultCount = computed(() => axisRows.value.filter((row) => row.failed).len
 
 const confirmMeta = computed(() => {
   switch (pending.value) {
-    case 'reset':
-      return {
-        title: '复位伺服错误',
-        message: '清除所有伺服轴的错误代码并解除报警',
-        detail: '复位前请确认故障已排除，否则再次动作可能触发相同错误。',
-        confirmText: '执行复位',
-        danger: false,
-      }
     case 'rebootSoft':
       return {
         title: '重启软件',
@@ -78,10 +68,7 @@ async function confirmRun(): Promise<void> {
   busyConfirm.value = true
   const kind = pending.value
   try {
-    if (kind === 'reset') {
-      await controlStore.execute('errRest', '伺服复位')
-      await nestStore.refreshErrors()
-    } else if (kind === 'rebootSoft') {
+    if (kind === 'rebootSoft') {
       await reboot(0)
       toast.success('软件重启指令已下发', '设备将短暂离线')
     } else if (kind === 'rebootSys') {
@@ -109,10 +96,6 @@ async function confirmRun(): Promise<void> {
           <span class="tag" :class="faultCount ? 'tag--danger' : 'tag--success'">
             {{ faultCount ? `${faultCount} 轴异常` : '全部正常' }}
           </span>
-          <button class="btn btn--sm" type="button" @click="pending = 'reset'">
-            <AppIcon name="reset" :size="12" />
-            一键复位
-          </button>
         </div>
       </header>
 

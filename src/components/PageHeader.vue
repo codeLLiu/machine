@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import AppConfirm from '@/components/AppConfirm.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { findMenuTrail } from '@/router'
-import { useControlStore } from '@/stores/control'
-import { useNestStore } from '@/stores/nest'
 import { useToast } from '@/composables/toast'
+import { useNestStore } from '@/stores/nest'
 
 const route = useRoute()
 const nestStore = useNestStore()
-const controlStore = useControlStore()
 const toast = useToast()
 
 const SUBTITLE: Record<string, string> = {
@@ -18,7 +15,6 @@ const SUBTITLE: Record<string, string> = {
   'config-camera': '视频源、推流地址与录像策略',
   'config-plc': 'PLC 通讯参数与连接自检',
   'config-mqtt': '消息订阅、认证与证书管理',
-  'debug-func': '系统操作 / 动作控制 / 模块位置 / 设备状态 / 调试日志',
   'debug-module': '按模块切换调试参数，实时回显位置与状态字',
   'module-params': '模块组配置与 Beam 信号位映射',
   system: '服务状态与维护操作',
@@ -37,19 +33,9 @@ const dateText = computed(() =>
   new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }),
 )
 
-const confirmOpen = ref(false)
-const busy = ref(false)
-
 function refresh(): void {
   void nestStore.refreshStatus()
   toast.info('正在刷新运行数据')
-}
-
-async function resetServo(): Promise<void> {
-  busy.value = true
-  await controlStore.execute('errRest', '伺服复位')
-  busy.value = false
-  confirmOpen.value = false
 }
 </script>
 
@@ -69,23 +55,9 @@ async function resetServo(): Promise<void> {
         <AppIcon name="clock" :size="15" /> {{ dateText }}
         <AppIcon name="chevronDown" :size="13" />
       </span>
-        <span class="fh-pill"><AppIcon name="cpu" :size="15" /> 机巢 A · HEFEI-01（写死数据）</span>
-      <button class="fh-pill" type="button" title="复位伺服错误" @click="confirmOpen = true">
-        <AppIcon name="reset" :size="15" /> 伺服复位
-      </button>
+      <span class="fh-pill"><AppIcon name="cpu" :size="15" /> 机巢 A · HEFEI-01（写死数据）</span>
     </div>
   </div>
-
-  <AppConfirm
-    v-model:open="confirmOpen"
-    title="确认复位伺服错误？"
-    message="将通过接口清除伺服错误代码。"
-    detail="请先确认故障原因已排除；复位不等同于急停，也不会切断运动输出。"
-    confirm-text="确认复位"
-    :danger="false"
-    :busy="busy"
-    @confirm="resetServo"
-  />
 </template>
 
 <style scoped>

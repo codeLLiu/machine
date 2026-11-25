@@ -4,6 +4,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import { appMenu } from '@/router'
 import { useAppStore } from '@/stores/app'
+import { useNestStore } from '@/stores/nest'
 import sidebarWave from '@/assets/images/sidebar_bottom_wave.png'
 
 interface SidebarItem {
@@ -20,6 +21,7 @@ interface SidebarGroup {
 }
 
 const appStore = useAppStore()
+const nestStore = useNestStore()
 const route = useRoute()
 const navGroups: SidebarGroup[] = [
   { label: '机巢', icon: 'homeSolid', route: 'overview' },
@@ -59,6 +61,13 @@ function toggleGroup(label: string): void {
 
 function isActive(name: string | undefined): boolean {
   return typeof name === 'string' && route.name === name
+}
+
+function handleSubNavClick(name: string): void {
+  appStore.closeMobileNav()
+  if (name === 'config-camera' && route.name === 'config-camera') {
+    void nestStore.refreshCameras()
+  }
 }
 </script>
 
@@ -138,7 +147,7 @@ function isActive(name: string | undefined): boolean {
               class="nav-sub"
               :class="{ 'nav-sub--active': isActive(item.route) }"
               :title="iconOnly ? item.label : undefined"
-              @click="appStore.closeMobileNav()"
+              @click="handleSubNavClick(item.route)"
             >
               <svg v-if="item.icon === 'stack'" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
                 <path d="M4 5h16v5H4zM4 13h16v5H4z" fill="#b9cdf0" />

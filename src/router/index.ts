@@ -34,7 +34,6 @@ export const appMenu: MenuGroup[] = [
   {
     label: '调试',
     items: [
-      { name: 'debug-func', title: '功能调试', icon: 'navFuncDebug' },
       { name: 'debug-module', title: '单步调试', icon: 'navModuleDebug' },
       { name: 'module-params', title: '模块参数', icon: 'navParams' },
     ],
@@ -97,12 +96,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'MQTT', section: 'mqtt' },
       },
       {
-        path: 'debug/func',
-        name: 'debug-func',
-        component: () => import('@/views/ControlView.vue'),
-        meta: { title: '功能调试' },
-      },
-      {
         path: 'debug/module',
         name: 'debug-module',
         component: () => import('@/views/DebugView.vue'),
@@ -136,7 +129,8 @@ const routes: RouteRecordRaw[] = [
       },
 
       /* 兼容旧地址 */
-      { path: 'control', redirect: { name: 'debug-func' } },
+      { path: 'control', redirect: { name: 'debug-module' } },
+      { path: 'debug/func', redirect: { name: 'debug-module' } },
       { path: 'config', redirect: { name: 'config-plc' } },
       { path: 'debug', redirect: { name: 'debug-module' } },
     ],

@@ -181,6 +181,7 @@ async function loadAll(): Promise<void> {
       mqtt.value = await fetchMqtt()
     } else {
       cameras.value = await fetchCameras()
+      nestStore.setCameras(cameras.value)
     }
   } catch (error) {
     toast.apiError('读取配置失败', error, '请检查设备连接')
@@ -300,6 +301,15 @@ async function pickCert(kind: 'ca' | 'cert' | 'key', event: Event): Promise<void
 }
 
 watch(active, () => void loadAll(), { immediate: true })
+
+watch(
+  () => nestStore.cameras,
+  (list) => {
+    if (active.value !== 'camera') return
+    cameras.value = list.map((camera) => ({ ...camera }))
+  },
+  { deep: true },
+)
 
 function scrollToTop(): void {
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -646,11 +656,11 @@ function scrollToTop(): void {
         </div>
       </div>
     </article>
-  </div>
 
-  <button v-if="active === 'camera'" class="cam__top-btn" type="button" aria-label="回到顶部" @click="scrollToTop">
-    <AppIcon name="chevronUp" :size="18" />
-  </button>
+    <button v-if="active === 'camera'" class="cam__top-btn" type="button" aria-label="回到顶部" @click="scrollToTop">
+      <AppIcon name="chevronUp" :size="18" />
+    </button>
+  </div>
 </template>
 
 <style scoped>

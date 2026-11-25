@@ -97,7 +97,6 @@ export const useNestStore = defineStore('nest', () => {
     stopPolling()
     void refreshStatus()
     void refreshErrors()
-    void refreshCameras()
     statusTimer = window.setInterval(() => void refreshStatus(), interval)
     errorTimer = window.setInterval(() => void refreshErrors(), interval)
   }

@@ -2,8 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { useToast } from '@/composables/toast'
+import { sendFunctionCommand } from '@/api/endpoints'
 import { useNestStore } from '@/stores/nest'
-import { sendCommand } from '@/api/endpoints'
 
 import compressorFan from '@/assets/images/01_compressor_fan.png'
 import batteryFull from '@/assets/images/02_battery_full.png'
@@ -35,6 +35,12 @@ type Tone = 'green' | 'gray' | 'orange' | 'blue' | 'red'
 
 const runStatus = computed(() => nestStore.runStatus)
 const compressorRunning = computed(() => runStatus.value?.ac === 1)
+const compressorActionLabel = computed(() => (compressorRunning.value ? '关闭压缩机' : '开启压缩机'))
+const compressorStateText = computed(() => {
+  if (runStatus.value?.ac === 0) return '未启动'
+  if (runStatus.value?.ac === 1) return '已启动'
+  return '--'
+})
 const compressorBusy = ref(false)
 
 function formatMetric(value: number | undefined, digits = 1): string {
@@ -105,6 +111,24 @@ function changeBatteryPage(step: number): void {
   const next = currentBatteryPage.value + step
   if (next < 0 || next >= batteryPages.value.length) return
   batteryPageIndex.value = next
+}
+
+async function toggleCompressor(): Promise<void> {
+  if (compressorBusy.value) return
+  const opening = !compressorRunning.value
+  compressorBusy.value = true
+  try {
+    await sendFunctionCommand({
+      cmd: opening ? 'acOpen' : 'acClose',
+      data: {},
+    })
+    toast.success('操作成功', opening ? '压缩机已开启' : '压缩机已关闭')
+    await nestStore.refreshStatus()
+  } catch (error) {
+    toast.apiError('操作失败', error, '压缩机控制指令发送失败')
+  } finally {
+    compressorBusy.value = false
+  }
 }
 
 const hardwareItems = computed(() => [
@@ -229,24 +253,6 @@ const lightItems = computed(() => {
     { label: '升降机状态', value: liftStatus.text, tone: liftStatus.tone, icon: lift },
   ]
 })
-
-async function toggleCompressor(): Promise<void> {
-  if (compressorBusy.value) return
-  const cmd = compressorRunning.value ? 'acClose' : 'acOpen'
-  compressorBusy.value = true
-  try {
-    await sendCommand({ cmd })
-    toast.success('操作成功', cmd === 'acOpen' ? '压缩机已启动' : '压缩机已关闭')
-    await nestStore.refreshStatus()
-    if (nestStore.mode !== 'live') {
-      toast.warning('状态刷新失败', nestStore.errorMessage || '压缩机状态可能尚未更新')
-    }
-  } catch (error) {
-    toast.apiError('操作失败', error, '压缩机控制指令发送失败')
-  } finally {
-    compressorBusy.value = false
-  }
-}
 </script>
 
 <template>
@@ -276,11 +282,15 @@ async function toggleCompressor(): Promise<void> {
           <button
             class="compressor-toggle"
             type="button"
+            :aria-label="compressorActionLabel"
+            :aria-busy="compressorBusy"
             :disabled="compressorBusy"
             @click="toggleCompressor"
           >
-            <span class="compressor-toggle__icon"><AppIcon name="power" :size="14" /></span>
-            {{ compressorBusy ? '处理中...' : compressorRunning ? '压缩机关闭' : '压缩机开启' }}
+            <span class="compressor-toggle__icon">
+              <AppIcon name="power" :size="14" />
+            </span>
+            {{ compressorBusy ? '处理中...' : compressorActionLabel }}
           </button>
         </div>
         <span class="control-divider" />
@@ -290,7 +300,7 @@ async function toggleCompressor(): Promise<void> {
           </div>
           <div class="control-info">
             <span>压缩机状态</span>
-            <strong>{{ compressorRunning ? '已启动' : '未启动' }}</strong>
+            <strong>{{ compressorStateText }}</strong>
           </div>
         </div>
       </div>
@@ -678,15 +688,14 @@ async function toggleCompressor(): Promise<void> {
   gap: calc(var(--s) * 8);
   width: 100%;
   max-width: calc(var(--s) * 158);
-  min-width: 0;
-  height: calc(var(--s) * 38);
-  padding: 0 calc(var(--s) * 10);
-  border: 1px solid rgba(255, 255, 255, 0.48);
+  height: calc(var(--s) * 34);
+  padding: 0 calc(var(--s) * 14);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 999px;
   color: #fff;
   background: linear-gradient(135deg, #81aeff 0%, #4f80f3 100%);
   font-size: calc(var(--fs) * 12);
-  font-weight: 600;
+  font-weight: 650;
   white-space: nowrap;
   cursor: pointer;
   box-shadow:
@@ -702,10 +711,19 @@ async function toggleCompressor(): Promise<void> {
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
+.compressor-toggle:active {
+  transform: translateY(0) scale(0.98);
+}
+
 .compressor-toggle:disabled {
-  opacity: 0.7;
+  opacity: 0.72;
   cursor: wait;
   transform: none;
+}
+
+.compressor-toggle:focus-visible {
+  outline: 2px solid rgba(67, 119, 244, 0.42);
+  outline-offset: 2px;
 }
 
 .compressor-toggle__icon {
@@ -713,6 +731,7 @@ async function toggleCompressor(): Promise<void> {
   place-items: center;
   width: calc(var(--s) * 19);
   height: calc(var(--s) * 19);
+  flex: 0 0 auto;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.18);
 }
@@ -990,15 +1009,15 @@ async function toggleCompressor(): Promise<void> {
   z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
+  grid-template-areas:
+    'hardware safety'
+    'environment lights';
   gap: calc(var(--s) * 16);
   margin-top: calc(var(--s) * 12);
 }
 
 .detail-column {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--s) * 16);
-  min-width: 0;
+  display: contents;
 }
 
 .detail-card {
@@ -1013,11 +1032,19 @@ async function toggleCompressor(): Promise<void> {
 }
 
 .hardware-card {
-  flex: 0 0 auto;
+  grid-area: hardware;
 }
 
 .environment-card {
-  flex: 1;
+  grid-area: environment;
+}
+
+.safety-card {
+  grid-area: safety;
+}
+
+.lights-card {
+  grid-area: lights;
 }
 
 .subhead {
@@ -1084,7 +1111,7 @@ async function toggleCompressor(): Promise<void> {
 }
 
 .hardware-item:hover .hardware-item__icon {
-  animation: detail-icon-bounce 0.52s cubic-bezier(0.22, 0.8, 0.32, 1);
+  animation: detail-icon-bounce 0.9s cubic-bezier(0.22, 0.8, 0.32, 1);
 }
 
 .hardware-item__ring-progress {
@@ -1094,7 +1121,7 @@ async function toggleCompressor(): Promise<void> {
 }
 
 .hardware-item:hover .hardware-item__ring-progress {
-  animation: cpu-ring-progress 0.85s cubic-bezier(0.22, 0.8, 0.32, 1) both;
+  animation: cpu-ring-progress 1.2s cubic-bezier(0.22, 0.8, 0.32, 1) both;
 }
 
 @keyframes cpu-ring-progress {
@@ -1224,7 +1251,7 @@ async function toggleCompressor(): Promise<void> {
 }
 
 .environment-item:hover .environment-item__head img {
-  animation: detail-icon-bounce 0.52s cubic-bezier(0.22, 0.8, 0.32, 1);
+  animation: detail-icon-bounce 0.9s cubic-bezier(0.22, 0.8, 0.32, 1);
 }
 
 .environment-item span {
@@ -1310,7 +1337,7 @@ async function toggleCompressor(): Promise<void> {
 }
 
 .safety-item:hover > img {
-  animation: detail-icon-bounce 0.52s cubic-bezier(0.22, 0.8, 0.32, 1);
+  animation: detail-icon-bounce 0.9s cubic-bezier(0.22, 0.8, 0.32, 1);
 }
 
 .safety-item__text {
@@ -1370,10 +1397,6 @@ async function toggleCompressor(): Promise<void> {
   color: #e35d5d;
 }
 
-.lights-card {
-  flex: 1;
-}
-
 .lights-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -1410,7 +1433,7 @@ async function toggleCompressor(): Promise<void> {
 }
 
 .light-tile:hover img {
-  animation: detail-icon-bounce 0.52s cubic-bezier(0.22, 0.8, 0.32, 1);
+  animation: detail-icon-bounce 0.9s cubic-bezier(0.22, 0.8, 0.32, 1);
 }
 
 .light-tile > span {
@@ -1444,6 +1467,11 @@ async function toggleCompressor(): Promise<void> {
 
   .detail-layout {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'hardware'
+      'environment'
+      'safety'
+      'lights';
   }
 }
 

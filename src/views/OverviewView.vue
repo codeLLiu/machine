@@ -1,23 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import AppConfirm from '@/components/AppConfirm.vue'
+import { computed } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
 import CountUp from '@/components/CountUp.vue'
 import NestSchematic from '@/components/NestSchematic.vue'
-import { useControlStore } from '@/stores/control'
 import { useNestStore } from '@/stores/nest'
-import type { ControlCmd } from '@/api/types'
 
 const nestStore = useNestStore()
-const controlStore = useControlStore()
-
-/** 态势页只放「看一眼就要动手」的四个动作 */
-const QUICK: { cmd: ControlCmd; label: string; icon: string }[] = [
-  { cmd: 'requestLand', label: '停机坪升起（无飞机）', icon: 'arrowUp' },
-  { cmd: 'takeoffClosing', label: '停机坪下降（无飞机）', icon: 'arrowDown' },
-  { cmd: 'requestTakeoff', label: '停机坪升起并释放起落架', icon: 'takeoff' },
-  { cmd: 'requestLandClose', label: '归中并下降（有飞机）', icon: 'landing' },
-]
 
 /** 作业流程：与 FlowHub 原型一致的六阶段条 */
 const FLOW: { title: string; sub: string; icon: string }[] = [
@@ -28,18 +16,6 @@ const FLOW: { title: string; sub: string; icon: string }[] = [
   { title: '返航', sub: 'Return', icon: 'landing' },
   { title: '归位', sub: 'Docked', icon: 'battery' },
 ]
-
-const pendingQuick = ref<{ cmd: ControlCmd; label: string } | null>(null)
-
-function quick(cmd: ControlCmd, label: string): void {
-  pendingQuick.value = { cmd, label }
-}
-
-function confirmQuick(): void {
-  const item = pendingQuick.value
-  pendingQuick.value = null
-  if (item) void controlStore.execute(item.cmd, item.label)
-}
 
 const status = computed(() => nestStore.runStatus)
 
@@ -190,29 +166,6 @@ const axisFaultCount = computed(() => axisRows.value.filter((row) => row.failed)
         </div>
         <p class="kpi__foot">支持连续轮换作业</p>
       </article>
-    </section>
-
-    <section class="quickbar">
-      <span class="quickbar__label">
-        <AppIcon name="zap" :size="13" />
-        快捷动作
-      </span>
-      <button
-        v-for="item in QUICK"
-        :key="item.cmd"
-        class="quickbar__btn"
-        type="button"
-        :disabled="controlStore.isRunning(item.cmd)"
-        @click="quick(item.cmd, item.label)"
-      >
-        <AppIcon
-          :name="controlStore.isRunning(item.cmd) ? 'refresh' : item.icon"
-          :size="13"
-          :class="{ spin: controlStore.isRunning(item.cmd) }"
-        />
-        {{ item.label }}
-      </button>
-      <span class="quickbar__hint">完整操作与二次确认见「功能调试」</span>
     </section>
 
     <section class="grid">
@@ -375,16 +328,6 @@ const axisFaultCount = computed(() => axisRows.value.filter((row) => row.failed)
       </div>
     </section>
 
-    <AppConfirm
-      :open="Boolean(pendingQuick)"
-      :title="pendingQuick?.label ?? ''"
-      message="该流程指令会驱动停机坪或起落架动作。"
-      detail="请先确认现场安全，并核对无人机是否在位。"
-      confirm-text="确认下发"
-      danger
-      @update:open="(value) => !value && (pendingQuick = null)"
-      @confirm="confirmQuick"
-    />
   </div>
 </template>
 
@@ -404,59 +347,6 @@ const axisFaultCount = computed(() => axisRows.value.filter((row) => row.failed)
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
-}
-
-/* 快捷动作条 */
-.quickbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  flex-wrap: wrap;
-}
-
-.quickbar__label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--fs-xs);
-  color: var(--text-3);
-  margin-right: 4px;
-}
-
-.quickbar__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  border-radius: var(--radius-xs);
-  border: 1px solid var(--border-strong);
-  background: var(--surface-2);
-  color: var(--text-2);
-  font-size: var(--fs-sm);
-  cursor: pointer;
-  transition: border-color var(--dur-1) ease, color var(--dur-1) ease, background var(--dur-1) ease;
-}
-
-.quickbar__btn:hover:not([disabled]) {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: var(--primary-weak);
-}
-
-.quickbar__btn[disabled] {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.quickbar__hint {
-  margin-left: auto;
-  font-size: var(--fs-xs);
-  color: var(--text-4);
 }
 
 .kpi {

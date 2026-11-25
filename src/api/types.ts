@@ -129,35 +129,6 @@ export interface WriteRegisterPayload {
   functionCode?: number | string
 }
 
-/** /api/functionDebug 文档明确列出的命令 */
-export type ControlCmd =
-  | 'acOpen'
-  | 'acClose'
-  | 'requestLand'
-  | 'takeoffClosing'
-  | 'requestTakeoff'
-  | 'requestLandClose'
-  | 'errRest'
-  | 'replace'
-  | 'undercartRelease'
-  | 'undercartFixed'
-  | 'power'
-  | 'fingerOpen'
-  | 'fingerClose'
-  | 'matchStart'
-  | 'rcOpen'
-  | 'rcClose'
-  | 'liveOff'
-  | 'lightOff'
-  | 'uavPower'
-  | 'liveOn'
-  | 'clear'
-
-export interface CmdPayload {
-  cmd: ControlCmd
-  data?: Record<string, unknown>
-}
-
 export interface DebugPayload {
   cmd: string
   data: Record<string, unknown>
