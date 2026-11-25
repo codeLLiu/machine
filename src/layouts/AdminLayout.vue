@@ -3,7 +3,6 @@ import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import NestTopbar from '@/components/NestTopbar.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
-import AppToast from '@/components/AppToast.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { useAppStore } from '@/stores/app'
 import { useNestStore } from '@/stores/nest'
@@ -21,7 +20,15 @@ watch(
 )
 
 onMounted(() => {
-  nestStore.startPolling(5000)
+  if (!standalone.value) nestStore.startPolling(5000)
+})
+
+watch(standalone, (isStandalone) => {
+  if (isStandalone) {
+    nestStore.stopPolling()
+  } else {
+    nestStore.startPolling(5000)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -31,9 +38,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="admin tech-bg" :class="{ 'is-mini': appStore.sidebarCollapsed, 'is-standalone': standalone }">
-    <AppSidebar v-if="!standalone" :class="{ 'is-open': appStore.mobileNavOpen }" />
+    <AppSidebar :class="{ 'is-open': appStore.mobileNavOpen }" />
     <Transition name="fade">
-      <div v-if="appStore.mobileNavOpen && !standalone" class="admin__overlay" @click="appStore.closeMobileNav()" />
+      <div v-if="appStore.mobileNavOpen" class="admin__overlay" @click="appStore.closeMobileNav()" />
     </Transition>
 
     <div class="admin__main">
@@ -48,7 +55,6 @@ onBeforeUnmount(() => {
       </main>
     </div>
 
-    <AppToast />
   </div>
 </template>
 

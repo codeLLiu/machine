@@ -13,7 +13,13 @@ const ICON: Record<string, string> = {
 <template>
   <div class="toasts" role="status" aria-live="polite">
     <TransitionGroup name="toast">
-      <div v-for="item in toastList" :key="item.id" class="toast" :class="`toast--${item.type}`">
+      <div
+        v-for="item in toastList"
+        :key="item.id"
+        class="toast"
+        :class="`toast--${item.type}`"
+        :role="item.type === 'error' ? 'alert' : 'status'"
+      >
         <span class="toast__icon">
           <AppIcon :name="ICON[item.type] ?? 'zap'" :size="15" />
         </span>
@@ -81,9 +87,13 @@ const ICON: Record<string, string> = {
 }
 
 .toast__body small {
+  max-height: 180px;
+  overflow: auto;
   font-size: var(--fs-xs);
   color: var(--text-3);
   line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .toast__close {

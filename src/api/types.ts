@@ -20,6 +20,13 @@ export interface RunStatus {
   battery: BatterySlot[]
   door: number
   emgStop: number
+  lastAction: string
+  lastActionSrc: string
+  /** 后端可能返回时间戳（数字/数字字符串）或日期字符串，展示层统一格式化 */
+  lastActionTime: string | number
+  /** 机巢运行时长，后端返回 xx天xx时xx分xx秒 格式的字符串 */
+  dockUptime: string
+  greenLed: number
   haveUav: number
   innerHumidity: number
   innerTemp: number
@@ -31,7 +38,13 @@ export interface RunStatus {
   outWindDir: number
   rainfall: number
   rc: number
+  redLed: number
+  cpuUsege: string
+  diskFree: string
+  memFree: string
   workStatus: number
+  workMsg: string
+  yellowLed: number
 }
 
 export interface AxisError {
@@ -118,6 +131,8 @@ export interface WriteRegisterPayload {
 
 /** /api/functionDebug 文档明确列出的命令 */
 export type ControlCmd =
+  | 'acOpen'
+  | 'acClose'
   | 'requestLand'
   | 'takeoffClosing'
   | 'requestTakeoff'

@@ -194,7 +194,7 @@ export const useControlStore = defineStore('control', () => {
     } catch (error) {
       log.status = 'fail'
       log.message = error instanceof Error ? error.message : '下发失败'
-      toast.error(`${label} 下发失败`, log.message)
+      toast.apiError(`${label} 下发失败`, error, log.message)
       return false
     } finally {
       running.delete(cmd)

@@ -28,6 +28,11 @@ function normalizeRunStatus(value: Partial<RunStatus> & Record<string, unknown>)
     battery: Array.isArray(value.battery) ? value.battery as RunStatus['battery'] : [],
     door: Number(value.door ?? 0),
     emgStop: Number(value.emgStop ?? 0),
+    lastAction: String(value.lastAction ?? ''),
+    lastActionSrc: String(value.lastActionSrc ?? ''),
+    lastActionTime: (value.lastActionTime ?? '') as string | number,
+    dockUptime: String(value.dockUptime ?? ''),
+    greenLed: Number(value.greenLed ?? 0),
     haveUav: Number(value.haveUav ?? 0),
     innerHumidity: Number(value.innerHumidity ?? value.Humidity ?? 0),
     innerTemp: Number(value.innerTemp ?? value.Temperature ?? 0),
@@ -39,13 +44,21 @@ function normalizeRunStatus(value: Partial<RunStatus> & Record<string, unknown>)
     outWindDir: Number(value.outWindDir ?? 0),
     rainfall: Number(value.rainfall ?? 0),
     rc: Number(value.rc ?? 0),
+    redLed: Number(value.redLed ?? 0),
+    cpuUsege: String(value.cpuUsege ?? ''),
+    diskFree: String(value.diskFree ?? ''),
+    memFree: String(value.memFree ?? ''),
     workStatus: Number(value.workStatus ?? 0),
+    workMsg: String(value.workMsg ?? ''),
+    yellowLed: Number(value.yellowLed ?? 0),
   }
 }
 
 export async function fetchRunStatus(): Promise<RunStatus> {
   const payload = await call<unknown>('/api/getRunStatus', { method: 'GET' })
-  const data = unwrap<Partial<RunStatus> & Record<string, unknown>>(payload)
+  const data = payload && typeof payload === 'object' && 'data' in payload
+    ? unwrap<Partial<RunStatus> & Record<string, unknown>>(payload)
+    : payload as Partial<RunStatus> & Record<string, unknown>
   return normalizeRunStatus(data ?? {})
 }
 

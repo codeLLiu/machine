@@ -169,7 +169,7 @@ async function loadStatus(): Promise<void> {
     gripHasBattery.value = findBooleanKey(axisPayload, 'isGripHaveBattery')
   } catch (error) {
     statusError.value = error instanceof Error ? error.message : '请检查设备连接'
-    toast.error('读取状态失败', statusError.value)
+    toast.apiError('读取状态失败', error, statusError.value)
   } finally {
     loadingStatus.value = false
   }
@@ -240,7 +240,7 @@ async function confirmRun(): Promise<void> {
     if (stepCommand) appendLog(stepCommand.cmd, stepCommand.label, 'fail', message)
     else if (isJob) appendLog('__job__', '点动调试', 'fail', message)
     else if (isManual) appendLog(manualCmd.value.trim(), manualCmd.value.trim(), 'fail', message)
-    toast.error('调试请求失败', message)
+    toast.apiError('调试请求失败', error, message)
   } finally {
     busy.value = false
   }
