@@ -49,7 +49,9 @@ New-Item -ItemType Junction -Path C:\nvm4w\nodejs -Target D:\nvm\v22.23.4
 | --- | --- | --- |
 | `/overview` | 机巢态势 | 4 张实时指标卡（数值滚动补间）+ **SVG 机巢剖面图** + 环境监测 + 6 项子系统状态 + 6 轴伺服状态 |
 | `/monitor` | 视频监控 | 三路摄像头画面卡（推流时为 LIVE HUD + 扫描线动效）、单路/全部推流与停流、RTSP 地址复制、通道清单表 |
-| `/config` | 设备配置 | PLC 通讯参数（含连接自检）、MQTT（连接/认证/SSL 证书上传）、摄像头配置三个标签页 |
+| `/config/plc` | PLC 配置 | 通讯参数与连接自检 |
+| `/config/mqtt` | MQTT 接入 | Broker 连接、协议/QoS、身份认证、TLS 双向证书与发布前校验 |
+| `/config/camera` | 摄像头 | 视频通道、推流控制与 RTSP 地址 |
 | `/debug` | 调试诊断 | 三个工作区：**模块调试**（13 个模块 / 组合模块、位置预设、速度与模式、执行与停止、24 路信号矩阵、日志过滤）、**寄存器读写**、**系统与诊断** |
 
 设计语言（v4 · FlowHub）：浅蓝渐变背景 + 悬浮玻璃侧栏 + 18px 圆角白卡，页面统一大标题、面包屑、
@@ -87,7 +89,7 @@ src/
 | 运行状态 | `GET /api/getRunStatus`、`GET /api/getPlcErr` |
 | 设备控制 | `POST /api/functionDebug` |
 | PLC | `POST /api/getPlc`、`POST /api/savePlc` |
-| MQTT | `POST /api/getMqtt`、`POST /api/saveMqtt`、`POST /api/saveCertificate` |
+| MQTT | `GET /api/getMqtt`、`POST /api/setMqtt`、`POST /api/uploadCert` |
 | 摄像头 | `POST /api/getCamera`、`POST /api/saveCamera`、`POST /api/startStream`、`POST /api/stopStream` |
 | 调试 | `POST /api/testRead`、`POST /api/testWrite`、`POST /api/setSystem`、`POST /api/reboot` |
 

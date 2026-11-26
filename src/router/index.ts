@@ -92,8 +92,8 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'config/mqtt',
         name: 'config-mqtt',
-        component: () => import('@/views/ConfigView.vue'),
-        meta: { title: 'MQTT', section: 'mqtt' },
+        component: () => import('@/views/MqttConfigView.vue'),
+        meta: { title: 'MQTT' },
       },
       {
         path: 'debug/module',

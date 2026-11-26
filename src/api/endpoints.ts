@@ -1,4 +1,5 @@
 import { call, unwrap } from './client'
+import { camMockEnabled, MOCK_CAMERAS } from './mock'
 import type {
   ApiResult,
   AxisError,
@@ -124,7 +125,18 @@ export async function uploadCert(num: number, text: string): Promise<void> {
   unwrap(response)
 }
 
+function normalizeMediaUrl(value?: string): string {
+  const text = (value ?? '').trim()
+  if (!text) return ''
+  const markdown = text.match(/\]\((https?:\/\/[^)]+)\)/)
+  if (markdown) return markdown[1]
+  return text.replace(/\\:\/\//g, '://')
+}
+
 export async function fetchCameras(): Promise<CameraInfo[]> {
+  if (camMockEnabled()) {
+    return MOCK_CAMERAS.map((camera) => ({ ...camera }))
+  }
   const payload = await call<unknown>('/api/getCamera', { method: 'GET' })
   const data = unwrap<CameraInfo[] | { camera?: CameraInfo[] }>(payload)
   const cameras = Array.isArray(data) ? data : data?.camera ?? []
@@ -134,21 +146,24 @@ export async function fetchCameras(): Promise<CameraInfo[]> {
       name: string
       disabled?: unknown
       rtsp?: string
+      flv?: string
       isPushing?: unknown
       isPublishing?: unknown
     }
     const pushing = raw.isPushing ?? raw.isPublishing
     return {
       id: Number(raw.id),
-      name: raw.name,
+      name: raw.name ?? '',
       disabled: Number(raw.disabled ?? 0),
-      rtsp: raw.rtsp ?? '',
-      isPushing: pushing === true || pushing === 1 || pushing === '1',
+      rtsp: normalizeMediaUrl(raw.rtsp),
+      flv: normalizeMediaUrl(raw.flv),
+      isPushing: pushing === true || pushing === 1 || pushing === '1' || pushing === 'true',
     }
   })
 }
 
 export async function saveCameras(list: CameraInfo[]): Promise<void> {
+  if (camMockEnabled()) return
   const request: CameraConfigPayload[] = list.map(({ id, name, disabled, rtsp }) => ({
     id,
     name,
@@ -160,11 +175,17 @@ export async function saveCameras(list: CameraInfo[]): Promise<void> {
 }
 
 export async function startStream(ids: number[]): Promise<StreamResult[]> {
+  if (camMockEnabled()) {
+    return ids.map((id) => ({ id, result: 1 }))
+  }
   const payload = await call<unknown>('/api/startStream', json(ids))
   return unwrap<StreamResult[]>(payload) ?? []
 }
 
 export async function stopStream(ids: number[]): Promise<StreamResult[]> {
+  if (camMockEnabled()) {
+    return ids.map((id) => ({ id, result: 1 }))
+  }
   const payload = await call<unknown>('/api/stopStream', json(ids.map((id) => ({ id }))))
   return unwrap<StreamResult[]>(payload) ?? []
 }

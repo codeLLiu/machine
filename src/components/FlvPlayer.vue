@@ -4,6 +4,7 @@ import mpegts from 'mpegts.js'
 
 const props = defineProps<{
   src?: string
+  controls?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -59,7 +60,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <video ref="video" class="flv-player" playsinline autoplay muted controls />
+  <video ref="video" class="flv-player" playsinline autoplay muted :controls="props.controls" />
 </template>
 
 <style scoped>

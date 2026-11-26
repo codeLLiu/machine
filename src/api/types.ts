@@ -70,6 +70,7 @@ export interface CameraInfo {
   id: number
   name: string
   rtsp: string
+  flv: string
   isPushing: boolean
   disabled: number
 }

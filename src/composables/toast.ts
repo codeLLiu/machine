@@ -1,6 +1,17 @@
 import { reactive } from 'vue'
 import { ApiError } from '@/api/client'
 
+let mqttDemoMode = false
+
+/** MQTT 接口不可用时页面会显示演示配置，避免全局轮询失败弹窗重复打扰。 */
+export function setMqttDemoMode(active: boolean): void {
+  mqttDemoMode = active
+}
+
+function isMqttDemoMode(): boolean {
+  return mqttDemoMode
+}
+
 export type ToastType = 'success' | 'error' | 'info' | 'warning'
 
 export interface ToastItem {
@@ -47,6 +58,7 @@ function push(
 /** HTTP 非 2xx 请求由请求层统一上报，即使调用方静默处理也会提示。 */
 export function reportHttpError(error: ApiError): void {
   if (error.httpStatus === undefined) return
+  if (isMqttDemoMode()) return
   const method = error.method ?? 'GET'
   const path = error.path ?? ''
   const detail = [
