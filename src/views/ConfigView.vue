@@ -6,11 +6,9 @@ import CameraPanel from '@/components/CameraPanel.vue'
 import {
   fetchMqtt,
   fetchPlc,
-  readRegisters,
   saveMqtt,
   savePlc,
   uploadCert,
-  writeRegisters,
 } from '@/api/endpoints'
 import { useToast } from '@/composables/toast'
 import type { MqttConfig, OptionItem, PlcConfig } from '@/api/types'
@@ -36,6 +34,10 @@ const saving = ref(false)
 
 /* ---------- PLC ---------- */
 const plc = reactive<PlcConfig>({ ip: '', port: 502 })
+const savedPlc = reactive<PlcConfig>({ ip: '', port: 502 })
+const plcDirty = computed(() => {
+  return plc.ip.trim() !== savedPlc.ip.trim() || Number(plc.port) !== Number(savedPlc.port)
+})
 
 /* ---------- MQTT ---------- */
 const mqtt = ref<MqttConfig | null>(null)
@@ -43,15 +45,23 @@ const uploading = ref('')
 
 /* ---------- 连通性自检 ---------- */
 const testing = ref(false)
-const writingRegister = ref(false)
-const registerId = ref(1000)
-const registerCount = ref(1)
-const registerValues = ref('0')
 const testState = ref<'idle' | 'ok' | 'fail'>('idle')
 const testMessage = ref('')
 const testAt = ref(0)
 
 const activeHint = computed(() => hints[active.value])
+const plcTestTitle = computed(() => {
+  if (testing.value) return '正在读取配置…'
+  if (testState.value === 'ok') return '链路正常'
+  if (testState.value === 'fail') return '链路异常'
+  return plcDirty.value ? '参数已修改' : '等待测试'
+})
+const plcTestLabel = computed(() => {
+  if (testing.value) return '测试中'
+  if (testState.value === 'ok') return '正常'
+  if (testState.value === 'fail') return '失败'
+  return '未测试'
+})
 
 const certSlots = computed(() => {
   const cert = mqtt.value?.cert
@@ -78,8 +88,13 @@ async function loadAll(): Promise<void> {
   try {
     if (active.value === 'plc') {
       const result = await fetchPlc()
-      plc.ip = result?.ip ?? ''
-      plc.port = Number(result?.port ?? 502)
+      const ip = result?.ip ?? ''
+      const port = Number(result?.port ?? 502)
+      plc.ip = ip
+      plc.port = port
+      savedPlc.ip = ip
+      savedPlc.port = port
+      resetPlcTest('尚未测试')
     } else if (active.value === 'mqtt') {
       mqtt.value = await fetchMqtt()
     }
@@ -90,41 +105,38 @@ async function loadAll(): Promise<void> {
   }
 }
 
+function resetPlcTest(message: string): void {
+  testState.value = 'idle'
+  testMessage.value = message
+  testAt.value = 0
+}
+
 async function handleTestPlc(): Promise<void> {
-  if (!Number.isInteger(registerId.value) || registerId.value < 0 || !Number.isInteger(registerCount.value) || registerCount.value < 1) {
-    toast.warning('寄存器起始地址和读取数量必须是有效的非负整数')
-    return
-  }
   testing.value = true
+  testMessage.value = 'GET /api/getPlc · 正在验证已保存参数'
   try {
-    const result = await readRegisters({ registerId: registerId.value, count: registerCount.value, functionCode: 3 })
+    const result = await fetchPlc()
+    const wasDirty = plcDirty.value
+    const ip = String(result?.ip ?? savedPlc.ip ?? '').trim()
+    const port = Number(result?.port ?? savedPlc.port)
+    if (ip && Number.isInteger(port) && port > 0 && port <= 65535) {
+      savedPlc.ip = ip
+      savedPlc.port = port
+      if (!wasDirty) {
+        plc.ip = ip
+        plc.port = port
+      }
+    }
     testState.value = 'ok'
-    testMessage.value = `读取成功 · ${result.value.join(', ') || '接口返回空值'}`
-    toast.success('PLC 读取成功', `已读取 ${result.value.length} 个寄存器`)
+    testMessage.value = `配置读取成功 · ${savedPlc.ip || '—'}:${savedPlc.port}`
+    toast.success('PLC 连接正常', '配置读取成功')
   } catch (error) {
     testState.value = 'fail'
     testMessage.value = error instanceof Error ? error.message : '连接失败'
-    toast.apiError('寄存器读取失败', error, testMessage.value)
+    toast.apiError('PLC 连接失败', error, testMessage.value)
   } finally {
     testing.value = false
     testAt.value = Date.now()
-  }
-}
-
-async function handleWriteRegisters(): Promise<void> {
-  const values = registerValues.value.split(/[,，\s]+/).filter(Boolean).map(Number)
-  if (!Number.isInteger(registerId.value) || registerId.value < 0 || !values.length || values.some((value) => !Number.isInteger(value) || value < 0 || value > 65535)) {
-    toast.warning('请填写有效地址和 0–65535 的整数写入值，多个值用逗号分隔')
-    return
-  }
-  writingRegister.value = true
-  try {
-    await writeRegisters({ registerId: registerId.value, values })
-    toast.success('寄存器写入成功', `地址 ${registerId.value}，写入 ${values.length} 个值`)
-  } catch (error) {
-    toast.apiError('寄存器写入失败', error, '请检查设备连接')
-  } finally {
-    writingRegister.value = false
   }
 }
 
@@ -141,6 +153,9 @@ async function handleSavePlc(): Promise<void> {
   saving.value = true
   try {
     await savePlc({ ip: plc.ip.trim(), port })
+    savedPlc.ip = plc.ip.trim()
+    savedPlc.port = port
+    resetPlcTest('参数已保存，可发起连接自检确认参数可用')
     toast.success('PLC 参数已保存', `${plc.ip.trim()}:${port}`)
   } catch (error) {
     toast.apiError('保存失败', error, '请稍后重试')
@@ -188,6 +203,13 @@ async function pickCert(kind: 'ca' | 'cert' | 'key', event: Event): Promise<void
 }
 
 watch(active, () => void loadAll(), { immediate: true })
+watch(plcDirty, (dirty) => {
+  if (dirty && !testing.value) {
+    testState.value = 'idle'
+    testMessage.value = '当前修改未保存 · 自检仍基于已保存参数'
+    testAt.value = 0
+  }
+})
 
 </script>
 
@@ -218,7 +240,7 @@ watch(active, () => void loadAll(), { immediate: true })
         <header class="panel__head">
           <div>
             <h2 class="panel__title">PLC 通讯参数</h2>
-            <p class="panel__sub">修改后需重新连接，动作指令将下发到该地址</p>
+            <p class="panel__sub">POST /api/setPlc · 修改后需重新连接，动作指令下发至该地址</p>
           </div>
           <span class="tag tag--muted mono">Modbus TCP</span>
         </header>
@@ -237,7 +259,10 @@ watch(active, () => void loadAll(), { immediate: true })
           </div>
 
           <div class="form__foot">
-            <p class="form__tip">保存后立即生效，连接会短暂中断 1–2 秒</p>
+            <p class="form__tip save-state" :class="{ 'save-state--dirty': plcDirty }">
+              <i class="save-state__dot" aria-hidden="true" />
+              {{ plcDirty ? '有未保存修改 · 自检将使用旧参数' : '已保存 · 与设备配置一致' }}
+            </p>
             <button class="btn btn--primary" type="button" :disabled="saving" @click="handleSavePlc">
               <AppIcon :name="saving ? 'refresh' : 'check'" :size="14" :class="{ spin: saving }" />
               保存参数
@@ -246,67 +271,48 @@ watch(active, () => void loadAll(), { immediate: true })
         </div>
       </article>
 
-      <article class="panel">
+      <article class="panel panel--corner">
         <header class="panel__head">
           <div>
             <h2 class="panel__title">连接自检</h2>
-            <p class="panel__sub">POST /api/testRead · 功能码 3 读取保持寄存器</p>
+            <p class="panel__sub">GET /api/getPlc · 使用已保存参数探测</p>
           </div>
           <span
             class="tag"
             :class="
-              testState === 'ok' ? 'tag--success' : testState === 'fail' ? 'tag--danger' : 'tag--muted'
+              testState === 'ok'
+                ? 'tag--success'
+                : testState === 'fail'
+                  ? 'tag--danger'
+                  : testing
+                    ? 'tag--warning'
+                    : 'tag--muted'
             "
           >
-            {{ testState === 'ok' ? '正常' : testState === 'fail' ? '失败' : '未测试' }}
+            {{ plcTestLabel }}
           </span>
         </header>
 
         <div class="panel__body self-test">
-          <div class="self-test__state" :class="`self-test__state--${testState}`">
+          <div class="self-test__state self-test__state--inline" :class="`self-test__state--${testState}`">
             <AppIcon
-              :name="testState === 'ok' ? 'check' : testState === 'fail' ? 'alert' : 'plug'"
-              :size="24"
+              :name="testing ? 'refresh' : testState === 'ok' ? 'check' : testState === 'fail' ? 'alert' : 'plug'"
+              :size="20"
+              :class="{ spin: testing }"
             />
-            <strong>
-              {{ testState === 'ok' ? '链路正常' : testState === 'fail' ? '链路异常' : '等待测试' }}
-            </strong>
-            <small>{{ testMessage || '发起一次探测，确认 PLC 可达' }}</small>
+            <span>
+              {{ plcTestTitle }}
+            </span>
+            <small>{{ testMessage || '尚未测试' }}</small>
           </div>
 
-          <div class="register-form">
-            <label class="field">
-              <span class="field__label">起始地址</span>
-              <input v-model.number="registerId" class="input mono" type="number" min="0" />
-            </label>
-            <label class="field">
-              <span class="field__label">读取数量</span>
-              <input v-model.number="registerCount" class="input mono" type="number" min="1" />
-            </label>
-          </div>
-
-          <p class="self-test__time mono">
-            最近读取 {{ testAt ? new Date(testAt).toLocaleTimeString('zh-CN', { hour12: false }) : '—' }}
+          <p class="self-test__time">
+            最近测试 {{ testAt ? new Date(testAt).toLocaleTimeString('zh-CN', { hour12: false }) : '—' }}
           </p>
 
-          <button class="btn btn--block" type="button" :disabled="testing" @click="handleTestPlc">
+          <button class="btn btn--primary" type="button" :disabled="testing" @click="handleTestPlc">
             <AppIcon :name="testing ? 'refresh' : 'plug'" :size="14" :class="{ spin: testing }" />
-            {{ testing ? '读取中…' : '读取寄存器' }}
-          </button>
-
-          <div class="register-form register-form--write">
-            <label class="field">
-              <span class="field__label">写入起始地址</span>
-              <input v-model.number="registerId" class="input mono" type="number" min="0" />
-            </label>
-            <label class="field">
-              <span class="field__label">写入值（逗号分隔）</span>
-              <input v-model="registerValues" class="input mono" placeholder="9090, 1111, 11110" />
-            </label>
-          </div>
-          <button class="btn btn--block" type="button" :disabled="writingRegister" @click="handleWriteRegisters">
-            <AppIcon :name="writingRegister ? 'refresh' : 'check'" :size="14" :class="{ spin: writingRegister }" />
-            {{ writingRegister ? '写入中…' : '写入寄存器' }}
+            {{ testing ? '测试中…' : '测试连接' }}
           </button>
         </div>
       </article>
@@ -588,34 +594,42 @@ watch(active, () => void loadAll(), { immediate: true })
   color: var(--text-4);
 }
 
-/* PLC 双栏 */
-.plc {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
+.save-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.self-test {
+.save-state__dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 14%, transparent);
+}
+
+.save-state--dirty {
+  color: var(--warning);
+}
+
+.save-state--dirty .save-state__dot {
+  background: var(--warning);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warning) 14%, transparent);
+}
+
+/* PLC */
+.plc {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-/* 左栏表单撑满卡片高度，操作按钮贴底，与右栏按钮对齐 */
-.plc > .panel {
-  display: flex;
-  flex-direction: column;
-}
-
-.plc > .panel > .panel__body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.plc .form__foot {
-  margin-top: auto;
+.self-test {
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
 }
 
 .self-test__state {
@@ -657,21 +671,27 @@ watch(active, () => void loadAll(), { immediate: true })
   color: var(--danger);
 }
 
+.self-test__state--inline {
+  flex: 1;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+.self-test__state--inline small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .self-test__time {
+  flex: none;
   font-size: var(--fs-xs);
   color: var(--text-4);
-  text-align: center;
-}
-
-.register-form {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.register-form--write {
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
+  white-space: nowrap;
 }
 
 /* SSL */
@@ -730,7 +750,19 @@ watch(active, () => void loadAll(), { immediate: true })
 
 @media (max-width: 1100px) {
   .plc {
-    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 900px) {
+  .self-test {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .self-test__state--inline {
+    flex: none;
   }
 }
 

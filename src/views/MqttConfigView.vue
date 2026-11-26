@@ -228,6 +228,17 @@ const selectedHost = computed(() => (config.value ? selectedOption(config.value.
 const selectedQos = computed(() => (config.value ? selectedOption(config.value.qos) : null))
 const selectedVer = computed(() => (config.value ? selectedOption(config.value.ver) : null))
 const selectedSsl = computed(() => (config.value ? selectedOption(config.value.ssl) : null))
+const apiOptionGroups = computed(() => {
+  const current = config.value
+  if (!current) return []
+  const format = (list: OptionItem[]) => JSON.stringify(list)
+  return [
+    { key: 'host', label: 'host', count: current.host.length, value: format(current.host) },
+    { key: 'qos', label: 'qos', count: current.qos.length, value: format(current.qos) },
+    { key: 'ver', label: 'ver', count: current.ver.length, value: format(current.ver) },
+    { key: 'ssl', label: 'ssl.list', count: current.ssl.length, value: format(current.ssl) },
+  ]
+})
 const hostPrefix = computed(() => selectedHost.value?.text ?? 'mqtt://')
 const sslEnabled = computed(() => config.value?.sslEnable === 1)
 const sslModeNum = computed(() => (selectedSsl.value ? Number(selectedSsl.value.num) : -1))
@@ -309,26 +320,26 @@ const checks = computed<CheckItem[]>(() => {
       ? '用户名与密码仅填写了一项，请确认 Broker 的认证方式'
       : `已配置账号 ${current.user.trim()}`
 
-  let tlsState: CheckState = 'pass'
-  let tlsDetail = 'TLS 未启用，证书文件不会参与连接'
+  let sslState: CheckState = 'pass'
+  let sslDetail = 'SSL 未启用，证书文件不会参与连接'
   if (sslEnabled.value) {
     if (!mode) {
-      tlsState = 'fail'
-      tlsDetail = '请选择 TLS 认证方式'
+      sslState = 'fail'
+      sslDetail = '请选择 SSL 认证方式'
     } else if (modeNum === 0) {
-      tlsState = 'warn'
-      tlsDetail = 'TLS 已启用，但未校验 Broker 证书'
+      sslState = 'warn'
+      sslDetail = 'SSL 已启用，但未校验 Broker 证书'
     } else if (modeNum === 1) {
-      tlsState = missingCerts.length ? 'fail' : 'pass'
-      tlsDetail = missingCerts.length ? '服务器认证需要 CA 证书' : 'CA 证书已就绪'
+      sslState = missingCerts.length ? 'fail' : 'pass'
+      sslDetail = missingCerts.length ? '服务器认证需要 CA 证书' : 'CA 证书已就绪'
     } else if (modeNum === 2) {
-      tlsState = missingCerts.length ? 'fail' : 'pass'
-      tlsDetail = missingCerts.length
+      sslState = missingCerts.length ? 'fail' : 'pass'
+      sslDetail = missingCerts.length
         ? `双向认证缺少：${missingCerts.map((slot) => slot.title).join('、')}`
         : 'CA、客户端证书与私钥已就绪'
     } else {
-      tlsState = 'fail'
-      tlsDetail = 'TLS 认证选项无效，请重新选择'
+      sslState = 'fail'
+      sslDetail = 'SSL 认证选项无效，请重新选择'
     }
   }
 
@@ -337,11 +348,11 @@ const checks = computed<CheckItem[]>(() => {
   const protocolDetail =
     protocolState === 'pass'
       ? sslEnabled.value
-        ? 'mqtts:// 与 TLS 开关一致'
+        ? 'mqtts:// 与 SSL 开关一致'
         : 'mqtt:// 与明文传输一致'
       : sslEnabled.value
-        ? 'TLS 已启用但选择了 mqtt://，请切换协议或关闭 TLS'
-        : '选择了 mqtts:// 但 TLS 未启用，请开启 TLS 或切换协议'
+        ? 'SSL 已启用但选择了 mqtt://，请切换协议或关闭 SSL'
+        : '选择了 mqtts:// 但 SSL 未启用，请开启 SSL 或切换协议'
 
   return [
     {
@@ -371,7 +382,7 @@ const checks = computed<CheckItem[]>(() => {
     },
     {
       key: 'protocol',
-      label: '协议与 TLS 一致性',
+      label: '协议与 SSL 一致性',
       detail: protocolDetail,
       state: protocolState,
       target: 'mqtt-endpoint',
@@ -385,10 +396,10 @@ const checks = computed<CheckItem[]>(() => {
     },
     {
       key: 'cert',
-      label: 'TLS 证书链',
-      detail: tlsDetail,
-      state: tlsState,
-      target: 'mqtt-tls',
+      label: 'SSL 证书链',
+      detail: sslDetail,
+      state: sslState,
+      target: 'mqtt-ssl',
     },
   ]
 })
@@ -455,7 +466,7 @@ function sslDescription(num: number): string {
   if (num === 0) return '仅加密链路，不校验证书'
   if (num === 1) return '客户端校验 Broker 的 CA 证书'
   if (num === 2) return '双方互相校验证书与私钥'
-  return 'TLS 认证方式'
+  return 'SSL 认证方式'
 }
 
 function sslModeIcon(num: number): string {
@@ -727,7 +738,7 @@ onBeforeUnmount(() => {
             </span>
             <span>
               <small>传输安全</small>
-              <b>{{ sslEnabled ? selectedSsl?.text || 'TLS' : '明文' }}</b>
+              <b>{{ sslEnabled ? selectedSsl?.text || 'SSL' : '明文' }}</b>
             </span>
           </div>
         </div>
@@ -736,7 +747,7 @@ onBeforeUnmount(() => {
       <footer class="hero__foot">
         <p class="hero__hint">
           <AppIcon :name="sslEnabled ? 'shield' : 'info'" :size="14" />
-          {{ sslEnabled ? 'TLS 通道已启用，凭据与证书将随连接握手使用' : '当前为明文通道，建议生产环境启用 TLS' }}
+          {{ sslEnabled ? 'SSL 通道已启用，凭据与证书将随连接握手使用' : '当前为明文通道，建议生产环境启用 SSL' }}
           <span>·</span>
           {{ syncFootnote }}
         </p>
@@ -805,11 +816,21 @@ onBeforeUnmount(() => {
                   <span class="protocol-card__text">
                     <b class="mono">{{ item.text }}</b>
                     <small>
-                      {{ item.text.toLowerCase().startsWith('mqtts') ? 'TLS 加密传输，适合公网接入' : '明文传输，仅建议内网调试使用' }}
+                      {{ item.text.toLowerCase().startsWith('mqtts') ? 'SSL 加密传输，适合公网接入' : '明文传输，仅建议内网调试使用' }}
                     </small>
                   </span>
                   <span class="protocol-card__check"><AppIcon name="check" :size="12" /></span>
                 </button>
+              </div>
+              <div v-if="usingDemo" class="demo-host-list">
+                <span class="demo-host-list__label">演示 host 数组</span>
+                <code v-for="item in config.host" :key="item.num">
+                  {
+                    num: {{ item.num }},
+                    text: "{{ item.text }}",
+                    isSelected: {{ item.isSelected }}
+                  }
+                </code>
               </div>
             </div>
 
@@ -834,7 +855,7 @@ onBeforeUnmount(() => {
               <label class="field endpoint-row__port">
                 <span class="field__label">端口</span>
                 <input v-model.number="config.port" class="input mono" type="number" min="1" max="65535" />
-                <span class="field__hint">TLS 常用 8883</span>
+                <span class="field__hint">SSL 常用 8883</span>
               </label>
             </div>
 
@@ -1015,14 +1036,14 @@ onBeforeUnmount(() => {
           </div>
         </section>
 
-        <section id="mqtt-tls" class="card">
+        <section id="mqtt-ssl" class="card">
           <header class="card__head">
             <span class="card__index">04</span>
             <div class="card__title">
-              <h2>TLS 与证书</h2>
+              <h2>SSL 与证书</h2>
               <p>链路加密、服务端校验与双向认证</p>
             </div>
-            <label class="switch tls-switch">
+            <label class="switch ssl-switch">
               <input type="checkbox" :checked="sslEnabled" @change="toggleSsl" />
               <span class="switch__track" />
               <span>{{ sslEnabled ? '已启用' : '未启用' }}</span>
@@ -1030,21 +1051,21 @@ onBeforeUnmount(() => {
           </header>
 
           <div class="card__body">
-            <div class="tls-body" :class="{ 'is-disabled': !sslEnabled }">
+            <div class="ssl-body" :class="{ 'is-disabled': !sslEnabled }">
               <div>
                 <p class="sect-label">认证方式</p>
-                <div class="tls-mode-grid">
+                <div class="ssl-mode-grid">
                   <button
                     v-for="item in config.ssl"
                     :key="item.num"
-                    class="tls-mode"
+                    class="ssl-mode"
                     :class="{ 'is-active': item.isSelected === 1 }"
                     type="button"
                     :disabled="!sslEnabled"
                     :aria-pressed="item.isSelected === 1"
                     @click="pickOption(config.ssl, item.num)"
                   >
-                    <span class="tls-mode__icon">
+                    <span class="ssl-mode__icon">
                       <AppIcon :name="sslModeIcon(item.num)" :size="16" />
                     </span>
                     <span>
@@ -1100,16 +1121,16 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <p class="tls-note">
+              <p class="ssl-note">
                 <AppIcon name="shield" :size="14" />
                 证书文件通过设备证书接口上传，保存时仅提交文件名。
                 服务器认证需要 CA 证书；双向认证还需要客户端证书与私钥。
               </p>
             </div>
 
-            <div v-if="!sslEnabled" class="tls-off-note">
+            <div v-if="!sslEnabled" class="ssl-off-note">
               <AppIcon name="info" :size="15" />
-              关闭 TLS 后，认证方式与证书不会参与连接；已上传文件会保留在设备中。
+              关闭 SSL 后，认证方式与证书不会参与连接；已上传文件会保留在设备中。
             </div>
           </div>
         </section>
@@ -1190,7 +1211,7 @@ onBeforeUnmount(() => {
               <h3><AppIcon name="link" :size="15" /> 链路预览</h3>
               <p>设备到 Broker 的当前连接参数</p>
             </div>
-            <span class="mini-tag">{{ sslEnabled ? 'TLS' : 'TCP' }}</span>
+            <span class="mini-tag">{{ sslEnabled ? 'SSL' : 'TCP' }}</span>
           </header>
 
           <div class="linkmap">
@@ -1200,7 +1221,7 @@ onBeforeUnmount(() => {
               <small>Publisher</small>
             </div>
             <div class="linkmap__wire">
-              <span>{{ sslEnabled ? 'TLS' : 'TCP' }}</span>
+              <span>{{ sslEnabled ? 'SSL' : 'TCP' }}</span>
               <i />
             </div>
             <div class="linkmap__node">
@@ -1243,9 +1264,21 @@ onBeforeUnmount(() => {
           </div>
 
           <p class="api-note">
-            保存时 <code>ssl</code> 会转换为 <code>{ enable, list }</code> 结构；
+            <b>GET 返回：</b><code>host</code>、<code>qos</code>、<code>ver</code>、<code>ssl</code> 均为数组。<br />
+            <b>POST 提交：</b><code>host</code>、<code>qos</code>、<code>ver</code> 原样提交；
+            <code>ssl</code> 按接口文档转换为 <code>{ enable, list }</code>，其中 <code>list</code> 为数组。<br />
             返回 <code>code: 1</code> 表示写入成功。保存后设备将重新连接 Broker。
           </p>
+
+          <div class="api-arrays">
+            <div v-for="group in apiOptionGroups" :key="group.key" class="api-array">
+              <div class="api-array__head">
+                <code>{{ group.label }}</code>
+                <span>{{ group.count }} 项</span>
+              </div>
+              <pre>{{ group.value }}</pre>
+            </div>
+          </div>
         </section>
       </aside>
     </div>
@@ -1866,6 +1899,30 @@ onBeforeUnmount(() => {
   gap: 10px;
 }
 
+.demo-host-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.demo-host-list__label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--warning);
+}
+
+.demo-host-list code {
+  padding: 4px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
 .protocol-card {
   position: relative;
   display: flex;
@@ -2079,7 +2136,7 @@ onBeforeUnmount(() => {
 
 .choice-card,
 .qos-card,
-.tls-mode {
+.ssl-mode {
   position: relative;
   border: 1px solid var(--border-strong);
   border-radius: 12px;
@@ -2099,14 +2156,14 @@ onBeforeUnmount(() => {
 
 .choice-card:hover,
 .qos-card:hover,
-.tls-mode:hover:not([disabled]) {
+.ssl-mode:hover:not([disabled]) {
   border-color: var(--border-glow);
   background: var(--surface-2);
 }
 
 .choice-card.is-active,
 .qos-card.is-active,
-.tls-mode.is-active {
+.ssl-mode.is-active {
   border-color: #78a9ff;
   background: linear-gradient(135deg, #f4f8ff, #eaf2ff);
   box-shadow: 0 7px 18px -16px rgba(31, 107, 255, 0.6);
@@ -2121,14 +2178,14 @@ onBeforeUnmount(() => {
 
 .choice-card b,
 .qos-card b,
-.tls-mode b {
+.ssl-mode b {
   font-size: 12px;
   font-weight: 700;
 }
 
 .choice-card small,
 .qos-card small,
-.tls-mode small {
+.ssl-mode small {
   font-size: 10px;
   color: var(--text-3);
   line-height: 1.45;
@@ -2148,13 +2205,13 @@ onBeforeUnmount(() => {
 
 .choice-card.is-active .choice-card__radio,
 .qos-card.is-active .choice-card__radio,
-.tls-mode.is-active .choice-card__radio {
+.ssl-mode.is-active .choice-card__radio {
   border-color: var(--primary);
 }
 
 .choice-card.is-active .choice-card__radio::after,
 .qos-card.is-active .choice-card__radio::after,
-.tls-mode.is-active .choice-card__radio::after {
+.ssl-mode.is-active .choice-card__radio::after {
   content: '';
   width: 6px;
   height: 6px;
@@ -2209,8 +2266,8 @@ onBeforeUnmount(() => {
 }
 
 .inline-note,
-.tls-note,
-.tls-off-note {
+.ssl-note,
+.ssl-off-note {
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -2227,8 +2284,8 @@ onBeforeUnmount(() => {
 }
 
 .inline-note svg,
-.tls-note svg,
-.tls-off-note svg {
+.ssl-note svg,
+.ssl-off-note svg {
   flex: 0 0 auto;
   margin-top: 2px;
   color: var(--primary);
@@ -2267,42 +2324,42 @@ onBeforeUnmount(() => {
   color: var(--text-2);
 }
 
-.tls-switch {
+.ssl-switch {
   flex: 0 0 auto;
   font-size: 10.5px;
   font-weight: 650;
 }
 
-.tls-body {
+.ssl-body {
   display: flex;
   flex-direction: column;
   gap: 17px;
   transition: opacity 0.18s ease;
 }
 
-.tls-body.is-disabled {
+.ssl-body.is-disabled {
   opacity: 0.58;
   user-select: none;
 }
 
-.tls-body.is-disabled .tls-mode-grid {
+.ssl-body.is-disabled .ssl-mode-grid {
   pointer-events: none;
 }
 
-.tls-mode-grid {
+.ssl-mode-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 9px;
 }
 
-.tls-mode {
+.ssl-mode {
   display: flex;
   align-items: flex-start;
   gap: 8px;
   padding: 10px;
 }
 
-.tls-mode__icon {
+.ssl-mode__icon {
   display: grid;
   place-items: center;
   width: 28px;
@@ -2313,19 +2370,19 @@ onBeforeUnmount(() => {
   color: var(--text-3);
 }
 
-.tls-mode.is-active .tls-mode__icon {
+.ssl-mode.is-active .ssl-mode__icon {
   background: #fff;
   color: var(--primary);
 }
 
-.tls-mode > span:nth-child(2) {
+.ssl-mode > span:nth-child(2) {
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding-right: 12px;
 }
 
-.tls-mode .choice-card__radio {
+.ssl-mode .choice-card__radio {
   position: absolute;
   top: 9px;
   right: 9px;
@@ -2455,13 +2512,13 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.tls-note {
+.ssl-note {
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text-3);
 }
 
-.tls-off-note {
+.ssl-off-note {
   border: 1px solid rgba(31, 107, 255, 0.12);
   background: var(--primary-weak);
   color: var(--text-2);
@@ -2875,6 +2932,55 @@ onBeforeUnmount(() => {
   font-size: 9.5px;
 }
 
+.api-arrays {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.api-array {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+}
+
+.api-array__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 9px;
+  border-bottom: 1px solid var(--border);
+}
+
+.api-array__head code {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.api-array__head span {
+  font-size: 9px;
+  color: var(--text-4);
+}
+
+.api-array pre {
+  max-height: 108px;
+  margin: 0;
+  padding: 8px 9px;
+  overflow: auto;
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 @media (max-width: 1360px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr) 326px;
@@ -2960,7 +3066,7 @@ onBeforeUnmount(() => {
 
   .protocol-grid,
   .qos-grid,
-  .tls-mode-grid {
+  .ssl-mode-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 

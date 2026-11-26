@@ -50,7 +50,7 @@ New-Item -ItemType Junction -Path C:\nvm4w\nodejs -Target D:\nvm\v22.23.4
 | `/overview` | 机巢态势 | 4 张实时指标卡（数值滚动补间）+ **SVG 机巢剖面图** + 环境监测 + 6 项子系统状态 + 6 轴伺服状态 |
 | `/monitor` | 视频监控 | 三路摄像头画面卡（推流时为 LIVE HUD + 扫描线动效）、单路/全部推流与停流、RTSP 地址复制、通道清单表 |
 | `/config/plc` | PLC 配置 | 通讯参数与连接自检 |
-| `/config/mqtt` | MQTT 接入 | Broker 连接、协议/QoS、身份认证、TLS 双向证书与发布前校验 |
+| `/config/mqtt` | MQTT 接入 | Broker 连接、协议/QoS、身份认证、SSL 双向证书与发布前校验 |
 | `/config/camera` | 摄像头 | 视频通道、推流控制与 RTSP 地址 |
 | `/debug` | 调试诊断 | 三个工作区：**模块调试**（13 个模块 / 组合模块、位置预设、速度与模式、执行与停止、24 路信号矩阵、日志过滤）、**寄存器读写**、**系统与诊断** |
 

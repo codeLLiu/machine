@@ -14,7 +14,7 @@ const SUBTITLE: Record<string, string> = {
   overview: '实时掌握设备、电量与作业流程 · 合肥机巢 A',
   'config-camera': '实时画面、推流控制与 RTSP 地址管理',
   'config-plc': 'PLC 通讯参数与连接自检',
-  'config-mqtt': 'Broker 连接、身份认证与 TLS 证书',
+  'config-mqtt': 'Broker 连接、身份认证与 SSL 证书',
   'debug-module': '按模块切换调试参数，实时回显位置与状态字',
   'module-params': '模块组配置与 Beam 信号位映射',
   system: '服务状态与维护操作',
